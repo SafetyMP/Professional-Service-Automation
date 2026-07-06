@@ -21,6 +21,9 @@
 # misc
 .DS_Store
 *.pem
+__pycache__/
+*.pyc
+.cursor/hooks/__pycache__/
 
 # debug
 npm-debug.log*

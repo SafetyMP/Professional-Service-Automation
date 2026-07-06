@@ -57,6 +57,18 @@ export default async function ProjectsPage() {
                 </Select>
               </div>
               <div>
+                <Label htmlFor="billingModel">Billing Model</Label>
+                <Select id="billingModel" name="billingModel" defaultValue="TIME_AND_MATERIALS">
+                  <option value="TIME_AND_MATERIALS">Time & Materials</option>
+                  <option value="FIXED_FEE">Fixed Fee</option>
+                  <option value="RETAINER">Retainer</option>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="contractAmount">Contract / Retainer Amount</Label>
+                <Input id="contractAmount" name="contractAmount" type="number" step="0.01" />
+              </div>
+              <div>
                 <Label htmlFor="budgetHours">Budget Hours</Label>
                 <Input id="budgetHours" name="budgetHours" type="number" step="0.5" />
               </div>
@@ -77,7 +89,9 @@ export default async function ProjectsPage() {
                 <Link href={`/projects/${p.id}`} className="font-semibold hover:underline">
                   {p.name}
                 </Link>
-                <p className="text-sm text-[var(--color-muted-foreground)]">{p.client.name}</p>
+                <p className="text-sm text-[var(--color-muted-foreground)]">
+                  {p.client.name} · {formatBillingModel(p.billingModel)}
+                </p>
               </div>
               <Badge variant={p.status === "ACTIVE" ? "success" : "default"}>{p.status}</Badge>
             </CardContent>
@@ -86,4 +100,17 @@ export default async function ProjectsPage() {
       </div>
     </AppShell>
   );
+}
+
+function formatBillingModel(model: string): string {
+  switch (model) {
+    case "FIXED_FEE":
+      return "Fixed Fee";
+    case "RETAINER":
+      return "Retainer";
+    case "MILESTONE":
+      return "Milestone";
+    default:
+      return "T&M";
+  }
 }

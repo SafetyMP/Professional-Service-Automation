@@ -2,17 +2,22 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { listInvoices, invoicesToJournalCsv } from "@/lib/billing/service";
+import { listInvoices, invoicesToJournalCsv, getProjectBillingStatus } from "@/lib/billing/service";
 import { listProjects } from "@/lib/projects/service";
 import { AppShell } from "@/components/layout/app-shell";
+import { InvoiceGenerateForm } from "@/components/billing/invoice-generate-form";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/card";
 import { generateInvoiceAction } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -24,6 +29,20 @@ export default async function InvoicesPage() {
     listProjects(session.user.organizationId),
   ]);
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
+  const activeProjects = projects.filter((project) => project.status === "ACTIVE");
+  const invoiceProjects = await Promise.all(
+    activeProjects.map(async (project) => {
+      const billing = await getProjectBillingStatus(session.user.organizationId, project.id);
+      return {
+        id: project.id,
+        name: project.name,
+        billingModel: project.billingModel,
+        contractAmount: billing?.contractAmount ?? null,
+        invoicedTotal: billing?.invoicedTotal ?? 0,
+        remaining: billing?.remaining ?? null,
+      };
+    }),
+  );
   const exportableInvoices = invoices.filter((inv) => inv.status !== "DRAFT");
   const journalCsv =
     exportableInvoices.length > 0
@@ -54,35 +73,19 @@ export default async function InvoicesPage() {
         )}
       </div>
 
+      {error && (
+        <div className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+
       {isAdmin && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Generate Draft Invoice</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={generateInvoiceAction} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <Label htmlFor="projectId">Project</Label>
-                <Select id="projectId" name="projectId" required>
-                  {projects.filter((p) => p.status === "ACTIVE").map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="startDate">From</Label>
-                <Input id="startDate" name="startDate" type="date" required />
-              </div>
-              <div>
-                <Label htmlFor="endDate">To</Label>
-                <Input id="endDate" name="endDate" type="date" required />
-              </div>
-              <div className="flex items-end">
-                <Button type="submit">Generate</Button>
-              </div>
-            </form>
+            <InvoiceGenerateForm projects={invoiceProjects} action={generateInvoiceAction} />
           </CardContent>
         </Card>
       )}

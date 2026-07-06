@@ -8,6 +8,7 @@ export default defineConfig({
   },
   resolve: {
     alias: [
+      { find: "@/generated/prisma/client", replacement: path.resolve(__dirname, "./generated/prisma/client") },
       { find: "@/lib", replacement: path.resolve(__dirname, "./lib") },
       { find: "@", replacement: path.resolve(__dirname, "./src") },
     ],

@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { getProject, listOrgUsers } from "@/lib/projects/service";
+import { getProjectBillingStatus } from "@/lib/billing/service";
 import { getProjectProfitabilityDetail } from "@/lib/reporting/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export default async function ProjectDetailPage({
   if (!project) notFound();
 
   const profitability = await getProjectProfitabilityDetail(session.user.organizationId, id);
+  const billingStatus = await getProjectBillingStatus(session.user.organizationId, id);
   const orgUsers = await listOrgUsers(session.user.organizationId);
   const canManage = hasMinRole(session.user.role, "MANAGER");
   const memberIds = new Set(project.members.map((m) => m.userId));
@@ -52,7 +54,9 @@ export default async function ProjectDetailPage({
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{project.name}</h1>
-          <p className="text-[var(--color-muted-foreground)]">{project.client.name}</p>
+          <p className="text-[var(--color-muted-foreground)]">
+            {project.client.name} · {formatBillingModel(project.billingModel)}
+          </p>
         </div>
         <Badge variant={project.status === "ACTIVE" ? "success" : "default"}>
           {project.status}
@@ -81,6 +85,25 @@ export default async function ProjectDetailPage({
                 </Select>
               </div>
               <div>
+                <Label htmlFor="billingModel">Billing Model</Label>
+                <Select id="billingModel" name="billingModel" defaultValue={project.billingModel}>
+                  <option value="TIME_AND_MATERIALS">Time & Materials</option>
+                  <option value="FIXED_FEE">Fixed Fee</option>
+                  <option value="RETAINER">Retainer</option>
+                  <option value="MILESTONE">Milestone</option>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="contractAmount">Contract / Retainer Amount</Label>
+                <Input
+                  id="contractAmount"
+                  name="contractAmount"
+                  type="number"
+                  step="0.01"
+                  defaultValue={project.contractAmount?.toString() ?? ""}
+                />
+              </div>
+              <div>
                 <Label htmlFor="budgetHours">Budget Hours</Label>
                 <Input
                   id="budgetHours"
@@ -94,6 +117,38 @@ export default async function ProjectDetailPage({
           </CardContent>
         </Card>
       )}
+
+      {billingStatus &&
+        (billingStatus.billingModel === "FIXED_FEE" ||
+          billingStatus.billingModel === "RETAINER") && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Contract Billing</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Contract Value</p>
+                <p className="text-xl font-bold">
+                  {billingStatus.contractAmount != null
+                    ? `$${formatCurrency(billingStatus.contractAmount)}`
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Invoiced</p>
+                <p className="text-xl font-bold">${formatCurrency(billingStatus.invoicedTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Remaining</p>
+                <p className="text-xl font-bold">
+                  {billingStatus.remaining != null
+                    ? `$${formatCurrency(billingStatus.remaining)}`
+                    : "—"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {profitability && (
         <Card className="mb-6">
@@ -271,4 +326,17 @@ export default async function ProjectDetailPage({
       </div>
     </AppShell>
   );
+}
+
+function formatBillingModel(model: string): string {
+  switch (model) {
+    case "FIXED_FEE":
+      return "Fixed Fee";
+    case "RETAINER":
+      return "Retainer";
+    case "MILESTONE":
+      return "Milestone";
+    default:
+      return "T&M";
+  }
 }

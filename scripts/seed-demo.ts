@@ -1,12 +1,13 @@
 import bcrypt from "bcryptjs";
 import { subDays } from "date-fns";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: { url: process.env.DIRECT_URL ?? process.env.DATABASE_URL },
-  },
+const pool = new Pool({
+  connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL,
 });
+const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
   const passwordHash = await bcrypt.hash("password123", 10);
@@ -73,11 +74,11 @@ async function main() {
   );
 
   const projectData = [
-    { name: "Digital Transformation", client: clients[0], budget: 400 },
-    { name: "ERP Integration", client: clients[0], budget: 200 },
-    { name: "Cloud Migration", client: clients[1], budget: 320 },
-    { name: "Security Audit", client: clients[1], budget: 160 },
-    { name: "Process Optimization", client: clients[2], budget: 240 },
+    { name: "Digital Transformation", client: clients[0], budget: 400, billingModel: "TIME_AND_MATERIALS" as const },
+    { name: "ERP Integration", client: clients[0], budget: 200, billingModel: "FIXED_FEE" as const, contractAmount: 48000 },
+    { name: "Cloud Migration", client: clients[1], budget: 320, billingModel: "TIME_AND_MATERIALS" as const },
+    { name: "Security Audit", client: clients[1], budget: 160, billingModel: "RETAINER" as const, contractAmount: 12000 },
+    { name: "Process Optimization", client: clients[2], budget: 240, billingModel: "TIME_AND_MATERIALS" as const },
   ];
 
   const projects = await Promise.all(
@@ -88,8 +89,9 @@ async function main() {
           clientId: p.client.id,
           name: p.name,
           status: "ACTIVE",
-          billingModel: "TIME_AND_MATERIALS",
+          billingModel: p.billingModel,
           budgetHours: p.budget,
+          contractAmount: "contractAmount" in p ? p.contractAmount : undefined,
           startDate: subDays(new Date(), 30),
         },
       }),

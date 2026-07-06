@@ -48,8 +48,16 @@ export async function createProjectAction(formData: FormData) {
     name: String(formData.get("name")),
     description: String(formData.get("description") || "") || undefined,
     status: String(formData.get("status") || "DRAFT") as "DRAFT" | "ACTIVE",
+    billingModel: String(formData.get("billingModel") || "TIME_AND_MATERIALS") as
+      | "TIME_AND_MATERIALS"
+      | "FIXED_FEE"
+      | "RETAINER"
+      | "MILESTONE",
     budgetHours: formData.get("budgetHours")
       ? Number(formData.get("budgetHours"))
+      : undefined,
+    contractAmount: formData.get("contractAmount")
+      ? Number(formData.get("contractAmount"))
       : undefined,
   });
   revalidatePath("/projects");
@@ -62,8 +70,16 @@ export async function updateProjectAction(formData: FormData) {
     name: String(formData.get("name")),
     description: String(formData.get("description") || "") || undefined,
     status: String(formData.get("status")) as "DRAFT" | "ACTIVE" | "ON_HOLD" | "COMPLETED",
+    billingModel: String(formData.get("billingModel")) as
+      | "TIME_AND_MATERIALS"
+      | "FIXED_FEE"
+      | "RETAINER"
+      | "MILESTONE",
     budgetHours: formData.get("budgetHours")
       ? Number(formData.get("budgetHours"))
+      : undefined,
+    contractAmount: formData.get("contractAmount")
+      ? Number(formData.get("contractAmount"))
       : undefined,
   });
   revalidatePath(`/projects/${formData.get("id")}`);
@@ -165,11 +181,39 @@ export async function createAllocationAction(formData: FormData) {
 export async function generateInvoiceAction(formData: FormData) {
   const user = await requireSession();
   requireRole(user, "ADMIN");
-  const invoice = await billing.generateDraftInvoice(user.organizationId, user.id, {
-    projectId: String(formData.get("projectId")),
-    startDate: new Date(String(formData.get("startDate"))),
-    endDate: new Date(String(formData.get("endDate"))),
-  });
+  const projectId = String(formData.get("projectId"));
+
+  let invoice;
+  try {
+    const billingModel = await billing.getProjectBillingModel(user.organizationId, projectId);
+
+    if (billingModel === "FIXED_FEE" || billingModel === "RETAINER") {
+      const amountRaw = formData.get("amount");
+      const percentRaw = formData.get("percentComplete");
+      invoice = await billing.generateDraftInvoice(user.organizationId, user.id, {
+        projectId,
+        amount: amountRaw ? Number(amountRaw) : undefined,
+        percentComplete: percentRaw ? Number(percentRaw) : undefined,
+      });
+    } else {
+      const startDateRaw = formData.get("startDate");
+      const endDateRaw = formData.get("endDate");
+      if (!startDateRaw || !endDateRaw) {
+        redirect(
+          `/invoices?error=${encodeURIComponent("Select a from/to date range for time and materials billing")}`,
+        );
+      }
+      invoice = await billing.generateDraftInvoice(user.organizationId, user.id, {
+        projectId,
+        startDate: new Date(String(startDateRaw)),
+        endDate: new Date(String(endDateRaw)),
+      });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to generate invoice";
+    redirect(`/invoices?error=${encodeURIComponent(message)}`);
+  }
+
   revalidatePath("/invoices");
   redirect(`/invoices/${invoice.id}`);
 }

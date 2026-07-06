@@ -39,6 +39,7 @@ export async function createProject(
     status?: ProjectStatus;
     billingModel?: BillingModel;
     budgetHours?: number;
+    contractAmount?: number;
     startDate?: Date;
     endDate?: Date;
   },
@@ -53,6 +54,7 @@ export async function createProject(
         status: data.status ?? "DRAFT",
         billingModel: data.billingModel ?? "TIME_AND_MATERIALS",
         budgetHours: data.budgetHours,
+        contractAmount: data.contractAmount,
         startDate: data.startDate,
         endDate: data.endDate,
       },
@@ -70,6 +72,7 @@ export async function updateProject(
     billingModel: BillingModel;
     budgetHours: number;
     billRateOverride: number;
+    contractAmount: number;
     startDate: Date | null;
     endDate: Date | null;
   }>,

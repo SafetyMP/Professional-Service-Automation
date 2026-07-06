@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "prisma generate && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src lib tests scripts --max-warnings 0",
@@ -20,34 +20,37 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.1",
     "@hookform/resolvers": "^5.0.1",
-    "@prisma/client": "^6.9.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "@tanstack/react-query": "^5.80.7",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "lucide-react": "^0.513.0",
-    "next": "^15.3.3",
+    "lucide-react": "^1.23.0",
+    "next": "^16.2.10",
     "next-auth": "^5.0.0-beta.28",
     "pdf-lib": "^1.17.1",
+    "pg": "^8.18.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.57.0",
     "tailwind-merge": "^3.3.0",
-    "zod": "^3.25.56"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^22.15.30",
+    "@types/node": "^26.1.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
-    "eslint": "^9.28.0",
-    "eslint-config-next": "^15.3.3",
-    "prisma": "^6.9.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.10",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4.1.8",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.1"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }

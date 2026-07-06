@@ -73,13 +73,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      const organizationId = token.organizationId as string | undefined;
+      const userId = token.userId as string | undefined;
+      if (!organizationId || !userId) {
+        return { ...session, user: undefined };
+      }
+
+      const membership = await prisma.organizationMember.findUnique({
+        where: {
+          organizationId_userId: { organizationId, userId },
+        },
+        include: { organization: true },
+      });
+      if (!membership) {
+        return { ...session, user: undefined };
+      }
+
       const user: SessionUser = {
-        id: token.userId as string,
+        id: userId,
         email: token.email as string,
         name: token.name as string,
-        organizationId: token.organizationId as string,
-        organizationSlug: token.organizationSlug as string,
-        role: token.role as SessionUser["role"],
+        organizationId: membership.organizationId,
+        organizationSlug: membership.organization.slug,
+        role: membership.role,
       };
       return { ...session, user };
     },

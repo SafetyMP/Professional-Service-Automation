@@ -1,11 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum OrgRole {
@@ -145,6 +144,7 @@ model Project {
   endDate        DateTime?
   budgetHours    Decimal?      @db.Decimal(10, 2)
   billRateOverride Decimal?    @db.Decimal(10, 2)
+  contractAmount Decimal?      @db.Decimal(12, 2)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

@@ -161,6 +161,7 @@ async function main() {
         description: "Client workshop rideshare",
         billable: true,
         status: "APPROVED",
+        billingStatus: "UNBILLED",
       },
       {
         organizationId: org.id,

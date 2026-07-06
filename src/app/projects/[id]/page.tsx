@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { getProject, listOrgUsers } from "@/lib/projects/service";
+import { getProjectProfitabilityDetail } from "@/lib/reporting/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
@@ -14,6 +15,17 @@ import {
   updateProjectAction,
 } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
+
+function formatCurrency(value: number): string {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatMarginPct(value: number | null): string {
+  return value == null ? "—" : `${value}%`;
+}
 
 export default async function ProjectDetailPage({
   params,
@@ -30,6 +42,7 @@ export default async function ProjectDetailPage({
   const project = await getProject(session.user.organizationId, id);
   if (!project) notFound();
 
+  const profitability = await getProjectProfitabilityDetail(session.user.organizationId, id);
   const orgUsers = await listOrgUsers(session.user.organizationId);
   const canManage = hasMinRole(session.user.role, "MANAGER");
   const memberIds = new Set(project.members.map((m) => m.userId));
@@ -78,6 +91,88 @@ export default async function ProjectDetailPage({
               </div>
               <Button type="submit">Save</Button>
             </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {profitability && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Profitability</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Billed</p>
+                <p className="text-xl font-bold">${formatCurrency(profitability.summary.billedRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Unbilled</p>
+                <p className="text-xl font-bold">${formatCurrency(profitability.summary.unbilledRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Revenue</p>
+                <p className="text-xl font-bold">${formatCurrency(profitability.summary.revenue)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Cost</p>
+                <p className="text-xl font-bold">${formatCurrency(profitability.summary.cost)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">Margin</p>
+                <p className="text-xl font-bold">
+                  ${formatCurrency(profitability.summary.margin)} ({formatMarginPct(profitability.summary.marginPct)})
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-md border border-[var(--color-border)] p-3 text-sm">
+                <p className="font-medium">Time revenue</p>
+                <p className="text-[var(--color-muted-foreground)]">
+                  Billed ${formatCurrency(profitability.timeRevenue.billed)} · Unbilled $
+                  {formatCurrency(profitability.timeRevenue.unbilled)}
+                </p>
+              </div>
+              <div className="rounded-md border border-[var(--color-border)] p-3 text-sm">
+                <p className="font-medium">Expense revenue</p>
+                <p className="text-[var(--color-muted-foreground)]">
+                  Billed ${formatCurrency(profitability.expenseRevenue.billed)} · Unbilled $
+                  {formatCurrency(profitability.expenseRevenue.unbilled)}
+                </p>
+              </div>
+            </div>
+
+            {profitability.byPerson.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="pb-2">Person</th>
+                      <th className="pb-2 text-right">Hours</th>
+                      <th className="pb-2 text-right">Billed</th>
+                      <th className="pb-2 text-right">Unbilled</th>
+                      <th className="pb-2 text-right">Revenue</th>
+                      <th className="pb-2 text-right">Cost</th>
+                      <th className="pb-2 text-right">Margin</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {profitability.byPerson.map((row) => (
+                      <tr key={row.userId} className="border-b">
+                        <td className="py-2 font-medium">{row.userName}</td>
+                        <td className="py-2 text-right">{row.hours}</td>
+                        <td className="py-2 text-right">${formatCurrency(row.billedRevenue)}</td>
+                        <td className="py-2 text-right">${formatCurrency(row.unbilledRevenue)}</td>
+                        <td className="py-2 text-right">${formatCurrency(row.revenue)}</td>
+                        <td className="py-2 text-right">${formatCurrency(row.cost)}</td>
+                        <td className="py-2 text-right">${formatCurrency(row.margin)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { getInvoice, invoiceToCsv } from "@/lib/billing/service";
+import { getInvoice, invoiceToCsv, invoiceToJournalCsv } from "@/lib/billing/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,13 @@ export default async function InvoiceDetailPage({
 
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
   const csv = invoiceToCsv(invoice);
+  const journalCsv = invoiceToJournalCsv({
+    invoiceNumber: invoice.invoiceNumber,
+    issueDate: invoice.issueDate,
+    clientName: invoice.project.client.name,
+    subtotal: invoice.subtotal,
+    lines: invoice.lines,
+  });
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
@@ -78,6 +86,14 @@ export default async function InvoiceDetailPage({
       </Card>
 
       <div className="flex flex-wrap gap-3">
+        <a href={`/api/invoices/${invoice.id}/pdf`}>
+          <Button type="button">Download PDF</Button>
+        </a>
+        <Link href={`/invoices/${invoice.id}/print`}>
+          <Button type="button" variant="secondary">
+            Preview Invoice
+          </Button>
+        </Link>
         {isAdmin && invoice.status === "DRAFT" && (
           <form action={updateInvoiceStatusAction.bind(null, invoice.id, "SENT")}>
             <Button type="submit">Mark Sent</Button>
@@ -93,7 +109,15 @@ export default async function InvoiceDetailPage({
           download={`${invoice.invoiceNumber}.csv`}
         >
           <Button type="button" variant="secondary">
-            Export CSV
+            Export Lines CSV
+          </Button>
+        </a>
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(journalCsv)}`}
+          download={`${invoice.invoiceNumber}-journal.csv`}
+        >
+          <Button type="button" variant="secondary">
+            Export Journal CSV
           </Button>
         </a>
       </div>

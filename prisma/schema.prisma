@@ -284,6 +284,7 @@ model InvoiceLine {
   organizationId String
   invoiceId      String
   timeEntryId    String?  @unique
+  expenseEntryId String?  @unique
   description    String
   quantity       Decimal  @db.Decimal(10, 2)
   unitRate       Decimal  @db.Decimal(10, 2)
@@ -293,6 +294,7 @@ model InvoiceLine {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invoice      Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   timeEntry    TimeEntry?   @relation(fields: [timeEntryId], references: [id], onDelete: SetNull)
+  expenseEntry ExpenseEntry? @relation(fields: [expenseEntryId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, invoiceId])
 }
@@ -307,14 +309,17 @@ model ExpenseEntry {
   description    String?
   billable       Boolean       @default(true)
   status         ExpenseStatus @default(DRAFT)
+  billingStatus  BillingStatus @default(UNBILLED)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoiceLine  InvoiceLine?
 
   @@index([organizationId, expenseDate])
+  @@index([organizationId, status, billingStatus])
 }
 
 model AuditLog {

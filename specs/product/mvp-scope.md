@@ -12,7 +12,7 @@ Deliver a working Professional Services Automation platform for consulting firms
 - Expense entry with approval workflow
 - Resource profiles, allocations, utilization dashboard
 - Draft invoice generation from approved billable time
-- Dashboard KPIs: utilization, unbilled WIP, project burn
+- Dashboard KPIs: utilization, unbilled WIP (hours and dollars), unbilled expense WIP, project burn
 
 ## Out of scope (Phase 2+)
 

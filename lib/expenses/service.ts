@@ -35,6 +35,7 @@ export async function listApprovedBillableExpenses(
         organizationId,
         projectId,
         status: "APPROVED",
+        billingStatus: "UNBILLED",
         billable: true,
       },
       include: { user: true, project: true },

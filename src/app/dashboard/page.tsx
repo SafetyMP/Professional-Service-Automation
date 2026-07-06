@@ -5,6 +5,13 @@ import { AppShell } from "@/components/layout/app-shell";
 import { getDashboardMetrics } from "@/lib/dashboard/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+function formatCurrency(value: number): string {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -17,7 +24,7 @@ export default async function DashboardPage() {
   return (
     <AppShell orgName={org?.name ?? "Organization"} userName={session.user.name}>
       <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
@@ -41,11 +48,37 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Unbilled WIP (hrs)
+              Total Unbilled WIP
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{metrics.unbilledWipHours}</p>
+            <p className="text-3xl font-bold">${formatCurrency(metrics.unbilledTotalWip)}</p>
+            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+              Time + expenses ready to bill
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
+              Unbilled Time WIP
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">${formatCurrency(metrics.unbilledTimeWip)}</p>
+            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+              {metrics.unbilledWipHours} hrs approved
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
+              Unbilled Expenses
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">${formatCurrency(metrics.unbilledExpenseWip)}</p>
           </CardContent>
         </Card>
         <Card>

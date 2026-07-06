@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { listInvoices } from "@/lib/billing/service";
+import { listInvoices, invoicesToJournalCsv } from "@/lib/billing/service";
 import { listProjects } from "@/lib/projects/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,35 @@ export default async function InvoicesPage() {
     listProjects(session.user.organizationId),
   ]);
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
+  const exportableInvoices = invoices.filter((inv) => inv.status !== "DRAFT");
+  const journalCsv =
+    exportableInvoices.length > 0
+      ? invoicesToJournalCsv(
+          exportableInvoices.map((inv) => ({
+            invoiceNumber: inv.invoiceNumber,
+            issueDate: inv.issueDate,
+            clientName: inv.project.client.name,
+            subtotal: inv.subtotal,
+            lines: inv.lines,
+          })),
+        )
+      : null;
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <h1 className="mb-6 text-2xl font-bold">Invoices</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Invoices</h1>
+        {isAdmin && journalCsv && (
+          <a
+            href={`data:text/csv;charset=utf-8,${encodeURIComponent(journalCsv)}`}
+            download="invoices-journal.csv"
+          >
+            <Button type="button" variant="secondary">
+              Export Journal CSV
+            </Button>
+          </a>
+        )}
+      </div>
 
       {isAdmin && (
         <Card className="mb-6">

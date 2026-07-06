@@ -3,6 +3,32 @@ import { withOrgContext } from "@/lib/tenancy/with-org-context";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { emitDomainEvent } from "@/lib/events/bus";
 
+const DEFAULT_BILL_RATE = 150;
+
+type BillRateProject = { billRateOverride?: Decimal | number | null };
+type BillRateProfile = { billRate: Decimal | number };
+type CostRateProfile = { costRate: Decimal | number };
+
+export function resolveEntryBillRate(
+  project: BillRateProject,
+  profile: BillRateProfile | null | undefined,
+): number {
+  if (project.billRateOverride != null) {
+    return Number(project.billRateOverride);
+  }
+  if (profile) {
+    return Number(profile.billRate);
+  }
+  return DEFAULT_BILL_RATE;
+}
+
+export function resolveEntryCostRate(profile: CostRateProfile | null | undefined): number {
+  if (profile) {
+    return Number(profile.costRate);
+  }
+  return 0;
+}
+
 export async function resolveBillRate(
   organizationId: string,
   userId: string,
@@ -53,20 +79,33 @@ export async function generateDraftInvoice(
     });
     if (!project) throw new Error("Project not found");
 
-    const entries = await tx.timeEntry.findMany({
-      where: {
-        organizationId,
-        projectId: params.projectId,
-        status: "APPROVED",
-        billingStatus: "UNBILLED",
-        billable: true,
-        entryDate: { gte: params.startDate, lte: params.endDate },
-      },
-      include: { user: true, task: true },
-    });
+    const [entries, expenses] = await Promise.all([
+      tx.timeEntry.findMany({
+        where: {
+          organizationId,
+          projectId: params.projectId,
+          status: "APPROVED",
+          billingStatus: "UNBILLED",
+          billable: true,
+          entryDate: { gte: params.startDate, lte: params.endDate },
+        },
+        include: { user: true, task: true },
+      }),
+      tx.expenseEntry.findMany({
+        where: {
+          organizationId,
+          projectId: params.projectId,
+          status: "APPROVED",
+          billingStatus: "UNBILLED",
+          billable: true,
+          expenseDate: { gte: params.startDate, lte: params.endDate },
+        },
+        include: { user: true },
+      }),
+    ]);
 
-    if (entries.length === 0) {
-      throw new Error("No approved billable time in date range");
+    if (entries.length === 0 && expenses.length === 0) {
+      throw new Error("No approved billable time or expenses in date range");
     }
 
     const count = await tx.invoice.count({ where: { organizationId } });
@@ -74,7 +113,8 @@ export async function generateDraftInvoice(
 
     let subtotal = new Decimal(0);
     const lines: {
-      timeEntryId: string;
+      timeEntryId?: string;
+      expenseEntryId?: string;
       description: string;
       quantity: Decimal;
       unitRate: Decimal;
@@ -85,9 +125,7 @@ export async function generateDraftInvoice(
       const profile = await tx.resourceProfile.findFirst({
         where: { userId: entry.userId, organizationId },
       });
-      const unitRate = project.billRateOverride
-        ? new Decimal(project.billRateOverride)
-        : new Decimal(profile?.billRate ?? 150);
+      const unitRate = new Decimal(resolveEntryBillRate(project, profile));
       const quantity = new Decimal(entry.hours);
       const amount = quantity.mul(unitRate);
       subtotal = subtotal.add(amount);
@@ -96,6 +134,18 @@ export async function generateDraftInvoice(
         description: `${entry.user.name} — ${entry.task?.name ?? "General"} (${entry.entryDate.toISOString().slice(0, 10)})`,
         quantity,
         unitRate,
+        amount,
+      });
+    }
+
+    for (const expense of expenses) {
+      const amount = new Decimal(expense.amount);
+      subtotal = subtotal.add(amount);
+      lines.push({
+        expenseEntryId: expense.id,
+        description: `Expense — ${expense.description ?? "Reimbursable"} (${expense.user.name}, ${expense.expenseDate.toISOString().slice(0, 10)})`,
+        quantity: new Decimal(1),
+        unitRate: amount,
         amount,
       });
     }
@@ -118,6 +168,7 @@ export async function generateDraftInvoice(
           create: lines.map((l) => ({
             organizationId,
             timeEntryId: l.timeEntryId,
+            expenseEntryId: l.expenseEntryId,
             description: l.description,
             quantity: l.quantity,
             unitRate: l.unitRate,
@@ -128,10 +179,19 @@ export async function generateDraftInvoice(
       include: { lines: true },
     });
 
-    await tx.timeEntry.updateMany({
-      where: { id: { in: entries.map((e) => e.id) } },
-      data: { billingStatus: "INVOICED" },
-    });
+    if (entries.length > 0) {
+      await tx.timeEntry.updateMany({
+        where: { id: { in: entries.map((e) => e.id) } },
+        data: { billingStatus: "INVOICED" },
+      });
+    }
+
+    if (expenses.length > 0) {
+      await tx.expenseEntry.updateMany({
+        where: { id: { in: expenses.map((e) => e.id) } },
+        data: { billingStatus: "INVOICED" },
+      });
+    }
 
     await writeAuditLog(tx, {
       organizationId,
@@ -139,7 +199,12 @@ export async function generateDraftInvoice(
       action: "INVOICE_CREATED",
       entityType: "Invoice",
       entityId: invoice.id,
-      metadata: { invoiceNumber, subtotal: subtotal.toString() },
+      metadata: {
+        invoiceNumber,
+        subtotal: subtotal.toString(),
+        timeLineCount: entries.length,
+        expenseLineCount: expenses.length,
+      },
     });
 
     await emitDomainEvent({
@@ -199,4 +264,80 @@ export function invoiceToCsv(invoice: {
       `${invoice.invoiceNumber},${invoice.issueDate.toISOString().slice(0, 10)},${invoice.dueDate.toISOString().slice(0, 10)},${invoice.status},"${l.description.replace(/"/g, '""')}",${l.quantity},${l.unitRate},${l.amount}`,
   );
   return [header, ...rows, `,,,,Subtotal,,,${invoice.subtotal}`].join("\n");
+}
+
+export type JournalInvoice = {
+  invoiceNumber: string;
+  issueDate: Date;
+  clientName: string;
+  subtotal: { toString(): string };
+  lines: Array<{
+    amount: { toString(): string };
+    timeEntryId?: string | null;
+    expenseEntryId?: string | null;
+  }>;
+};
+
+function formatJournalAmount(value: number): string {
+  return value.toFixed(2);
+}
+
+function escapeJournalField(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+function splitInvoiceRevenue(lines: JournalInvoice["lines"]): {
+  timeRevenue: number;
+  expenseRevenue: number;
+} {
+  let timeRevenue = 0;
+  let expenseRevenue = 0;
+
+  for (const line of lines) {
+    const amount = Number(line.amount.toString());
+    if (line.expenseEntryId) {
+      expenseRevenue += amount;
+    } else {
+      timeRevenue += amount;
+    }
+  }
+
+  return { timeRevenue, expenseRevenue };
+}
+
+export function invoiceToJournalRows(invoice: JournalInvoice): string[] {
+  const date = invoice.issueDate.toISOString().slice(0, 10);
+  const reference = invoice.invoiceNumber;
+  const subtotal = Number(invoice.subtotal.toString());
+  const { timeRevenue, expenseRevenue } = splitInvoiceRevenue(invoice.lines);
+  const clientLabel = escapeJournalField(`${reference} ${invoice.clientName}`);
+
+  const rows = [
+    `${date},Accounts Receivable,${clientLabel},${formatJournalAmount(subtotal)},,${reference}`,
+  ];
+
+  if (timeRevenue > 0) {
+    rows.push(
+      `${date},Service Revenue,${escapeJournalField(`${reference} professional services`)},,${formatJournalAmount(timeRevenue)},${reference}`,
+    );
+  }
+
+  if (expenseRevenue > 0) {
+    rows.push(
+      `${date},Expense Revenue,${escapeJournalField(`${reference} reimbursable expenses`)},,${formatJournalAmount(expenseRevenue)},${reference}`,
+    );
+  }
+
+  return rows;
+}
+
+export function invoiceToJournalCsv(invoice: JournalInvoice): string {
+  const header = "Date,Account,Description,Debit,Credit,Reference";
+  return [header, ...invoiceToJournalRows(invoice)].join("\n");
+}
+
+export function invoicesToJournalCsv(invoices: JournalInvoice[]): string {
+  const header = "Date,Account,Description,Debit,Credit,Reference";
+  const rows = invoices.flatMap((invoice) => invoiceToJournalRows(invoice));
+  return [header, ...rows].join("\n");
 }

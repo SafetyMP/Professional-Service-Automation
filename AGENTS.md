@@ -42,6 +42,7 @@ Domain logic lives in `lib/<domain>/`. Cross-domain imports must go through publ
 | expenses | `lib/expenses/service.ts` |
 | resources | `lib/resources/service.ts` |
 | billing | `lib/billing/service.ts` |
+| reporting | `lib/reporting/service.ts` |
 
 ## Definition of Done
 

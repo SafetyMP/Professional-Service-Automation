@@ -12,6 +12,7 @@ const links = [
   { href: "/expenses", label: "Expenses" },
   { href: "/resources", label: "Resources" },
   { href: "/resources/utilization", label: "Utilization" },
+  { href: "/reports/profitability", label: "Profitability" },
   { href: "/invoices", label: "Invoices" },
 ];
 

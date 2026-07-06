@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: psa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Setup database role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d psa -c "CREATE ROLE psa_app WITH LOGIN PASSWORD 'psa_app_dev' NOSUPERUSER;"
+          psql -h localhost -U postgres -d psa -c "GRANT CONNECT ON DATABASE psa TO psa_app;"
+          psql -h localhost -U postgres -d psa -c "GRANT ALL ON SCHEMA public TO psa_app;"
+
+      - name: Migrate
+        env:
+          DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
+        run: npx prisma migrate deploy
+
+      - name: Apply RLS
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d psa -f prisma/rls.sql
+
+      - run: ./scripts/verify.sh
+        env:
+          DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
+          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
+          AUTH_SECRET: ci-test-secret-min-32-chars-long!!
+          AUTH_URL: http://localhost:3000

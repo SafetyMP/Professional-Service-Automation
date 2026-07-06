@@ -1,0 +1,3 @@
+-- App role for RLS (non-superuser)
+CREATE ROLE psa_app WITH LOGIN PASSWORD 'psa_app_dev' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+GRANT CONNECT ON DATABASE psa TO psa_app;

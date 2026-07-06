@@ -1,0 +1,63 @@
+{
+  "schema": "harness-disclosure/v1",
+  "scope": "effective",
+  "generated_at": "2026-07-06T01:06:13.810093+00:00",
+  "global": {
+    "schema": "harness-disclosure/v1",
+    "scope": "global",
+    "generated_at": "2026-07-06T01:06:13.807648+00:00",
+    "global_harness": {
+      "platform_version": "2026-07-v4",
+      "constitution_hash": "b5cd6c87a4fd7611",
+      "disclosure_hash": "d9b65b473870c8a7",
+      "rules_always_on_words": 1668,
+      "global_hooks": [
+        "afterAgentResponse",
+        "afterFileEdit",
+        "beforeMCPExecution",
+        "beforeReadFile",
+        "beforeShellExecution",
+        "beforeSubmitPrompt",
+        "preCompact",
+        "stop",
+        "subagentStart",
+        "subagentStop"
+      ],
+      "inner_harness_uncontrolled": true,
+      "skills_available": 20
+    }
+  },
+  "repo": {
+    "schema": "harness-disclosure/v1",
+    "scope": "repo",
+    "generated_at": "2026-07-06T01:06:13.809944+00:00",
+    "repo_harness": {
+      "profile": "fleet",
+      "bundles_applied": [
+        "cloud-guards",
+        "verify-on-stop",
+        "fleet-instruction",
+        "subagent-handoff",
+        "session-start"
+      ],
+      "profile_hash": "880a8077e94ae62f",
+      "version_hash": "a954bd8e8219d855",
+      "agents_md_lines": 60,
+      "verify": {
+        "cmd": "./scripts/verify.sh",
+        "stop_verify": "project-verify-on-stop",
+        "cloud_verify": null
+      }
+    },
+    "last_check_at": "2026-07-06T01:06:13.804951+00:00",
+    "last_verify_exit": 0
+  },
+  "effective": {
+    "global_version": "2026-07-v4",
+    "global_hash": "d9b65b473870c8a7",
+    "repo_hash": "880a8077e94ae62f",
+    "effective_hash": "7c5878a31b7a47fe",
+    "runtime": "ide",
+    "inner_harness_uncontrolled": true
+  }
+}

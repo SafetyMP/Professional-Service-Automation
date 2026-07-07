@@ -1,0 +1,54 @@
+name: Feature request
+description: Suggest an improvement or new capability
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Check [MVP scope](https://github.com/SafetyMP/Professional-Service-Automation/blob/main/specs/product/mvp-scope.md) for Phase 1 vs Phase 2 boundaries.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What user or business problem does this solve?
+      placeholder: Consulting firms need to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or UX you would like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Suggested phase
+      options:
+        - Phase 1 polish (MVP gap)
+        - Phase 2 (see mvp-scope.md)
+        - Unsure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to open a pull request for this feature
+          required: false

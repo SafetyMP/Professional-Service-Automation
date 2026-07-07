@@ -1,5 +1,9 @@
 # Professional Service Automation (PSA)
 
+[![CI](https://github.com/SafetyMP/Professional-Service-Automation/actions/workflows/ci.yml/badge.svg)](https://github.com/SafetyMP/Professional-Service-Automation/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/SafetyMP/Professional-Service-Automation)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+
 Open-source Professional Services Automation platform for consulting and professional services firms. Manage clients, projects, time, expenses, resources, utilization, billing, and profitability in one multi-tenant web app.
 
 ## Features
@@ -20,7 +24,7 @@ Open-source Professional Services Automation platform for consulting and profess
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 22+ (see [`.nvmrc`](.nvmrc))
 - Docker (for local Postgres) or an existing PostgreSQL 16 instance
 - npm
 
@@ -92,9 +96,23 @@ scripts/       Seed, verify, boundary checks
 
 Domain logic lives in `lib/<domain>/service.ts`. Cross-domain imports must go through public service files only (enforced by `scripts/check-boundaries.ts`).
 
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the pull request checklist.
+
+- [Bug reports](.github/ISSUE_TEMPLATE/bug_report.yml)
+- [Feature requests](.github/ISSUE_TEMPLATE/feature_request.yml)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Roadmap
+
+Phase 1 (MVP) is implemented. Planned Phase 2 items are listed in [`specs/product/mvp-scope.md`](specs/product/mvp-scope.md), including accounting integrations, expanded expense UI, and general ledger support.
+
+Release history: [CHANGELOG.md](CHANGELOG.md).
+
 ## CI
 
-GitHub Actions runs `./scripts/verify.sh` on push/PR with a Postgres service container. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions runs `./scripts/verify.sh` on push and pull request with a Postgres service container. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Documentation
 

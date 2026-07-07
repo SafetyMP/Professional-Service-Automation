@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Professional Services Automation platform for consulting firms",
   "license": "Apache-2.0",
+  "author": "SafetyMP",
+  "homepage": "https://github.com/SafetyMP/Professional-Service-Automation#readme",
+  "bugs": {
+    "url": "https://github.com/SafetyMP/Professional-Service-Automation/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/SafetyMP/Professional-Service-Automation.git"
@@ -16,7 +21,10 @@
     "nextjs",
     "prisma"
   ],
-  "private": true,
+  "private": false,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "prisma generate && next dev",
     "build": "next build",

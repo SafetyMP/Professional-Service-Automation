@@ -2,6 +2,11 @@
 
 ## Supported versions
 
+| Version | Supported |
+|---------|-----------|
+| `main` (latest) | Yes |
+| Tagged releases | Security fixes backported at maintainer discretion |
+
 Security fixes are applied to the default branch (`main`).
 
 ## Reporting a vulnerability
@@ -17,9 +22,9 @@ Include:
 - Affected versions or commits
 - Suggested fix (if any)
 
-We aim to acknowledge reports within a few business days.
+We aim to acknowledge reports within a few business days and will coordinate disclosure before any public fix.
 
-## Deployment reminders
+## Secure deployment
 
 - Change all demo passwords before production use
 - Set a strong, unique `AUTH_SECRET`

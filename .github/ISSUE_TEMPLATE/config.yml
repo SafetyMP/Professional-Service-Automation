@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas
+    url: https://github.com/SafetyMP/Professional-Service-Automation/discussions
+    about: Ask questions or brainstorm ideas outside of bug reports and feature requests
+  - name: Security vulnerability
+    url: https://github.com/SafetyMP/Professional-Service-Automation/security/advisories/new
+    about: Report a security issue privately (do not open a public issue)

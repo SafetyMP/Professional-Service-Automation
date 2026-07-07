@@ -1,6 +1,21 @@
 {
   "name": "psa-platform",
   "version": "0.1.0",
+  "description": "Professional Services Automation platform for consulting firms",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SafetyMP/Professional-Service-Automation.git"
+  },
+  "keywords": [
+    "psa",
+    "professional-services",
+    "consulting",
+    "time-tracking",
+    "invoicing",
+    "nextjs",
+    "prisma"
+  ],
   "private": true,
   "scripts": {
     "dev": "prisma generate && next dev",
@@ -26,7 +41,6 @@
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "lucide-react": "^1.23.0",
     "next": "^16.2.10",
     "next-auth": "^5.0.0-beta.28",
     "pdf-lib": "^1.17.1",

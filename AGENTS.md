@@ -6,7 +6,7 @@ Harness profile: **fleet** (`specs/MANDATE.md` is DRAFT).
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript · PostgreSQL · Prisma · Auth.js · Tailwind
+Next.js 16 (App Router) · TypeScript · PostgreSQL · Prisma 7 · Auth.js · Tailwind
 
 ## Commands
 
@@ -16,7 +16,7 @@ Next.js 15 (App Router) · TypeScript · PostgreSQL · Prisma · Auth.js · Tail
 | `npm install` | Install dependencies |
 | `npm run db:migrate` | Apply Prisma migrations |
 | `npm run db:seed` | Seed demo firm |
-| `npm run dev` | Dev server (localhost:3000) |
+| `npm run dev` | Dev server (default localhost:3000; use `-p 3005` if needed) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Vitest unit tests |

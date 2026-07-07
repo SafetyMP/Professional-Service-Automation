@@ -11,7 +11,10 @@ Deliver a working Professional Services Automation platform for consulting firms
 - Time entry with approval workflow
 - Expense entry with approval workflow
 - Resource profiles, allocations, utilization dashboard
-- Draft invoice generation from approved billable time
+- Draft invoice generation from approved billable time and expenses
+- Fixed-fee and retainer contract billing with progress invoicing
+- Project profitability reporting (billed vs unbilled revenue)
+- Invoice PDF download and accounting journal CSV export
 - Dashboard KPIs: utilization, unbilled WIP (hours and dollars), unbilled expense WIP, project burn
 
 ## Out of scope (Phase 2+)

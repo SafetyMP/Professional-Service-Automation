@@ -1,0 +1,21 @@
+title: Q&A
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask questions about setup, deployment, billing behavior, or contributing.
+        For bugs and feature requests, use the issue templates instead.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do or understand?
+      placeholder: How do I deploy with Docker and disable demo seeding?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Environment, version, or steps you've already tried (optional)
+      placeholder: v0.1.2, docker-compose.stack.yml, SEED_DEMO=false

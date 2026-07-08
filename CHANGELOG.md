@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-07
+
+### Added
+
+- Docker deployment: `Dockerfile`, `docker-compose.stack.yml`, and [`docs/deploy.md`](docs/deploy.md)
+- README hero demo GIF and deploy quick-start section
+- Screenshots CI workflow (release, monthly schedule, manual dispatch)
+- GitHub Discussions with Q&A template
+- Repository description and homepage metadata
+
 ## [0.1.1] - 2026-07-07
 
 ### Added
@@ -40,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI running `./scripts/verify.sh`
 - README, SECURITY policy, and developer documentation
 
-[Unreleased]: https://github.com/SafetyMP/Professional-Service-Automation/compare/v0.1.1...main
+[Unreleased]: https://github.com/SafetyMP/Professional-Service-Automation/compare/v0.1.2...main
+[0.1.2]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.2
 [0.1.1]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.1
 [0.1.0]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.0

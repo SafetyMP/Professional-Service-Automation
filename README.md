@@ -6,6 +6,10 @@
 
 Open-source Professional Services Automation platform for consulting and professional services firms. Manage clients, projects, time, expenses, resources, utilization, billing, and profitability in one multi-tenant web app.
 
+<p align="center">
+  <img src="docs/images/demo.gif" alt="PSA platform demo — dashboard, invoices, and profitability views" width="900" />
+</p>
+
 ## Features
 
 - **Multi-tenant organizations** with role-based access (Admin, Manager, Consultant)
@@ -75,6 +79,18 @@ See [`.env.example`](.env.example):
 
 Local Docker Postgres listens on **port 5440** (mapped from container 5432).
 
+## Deploy
+
+For production or a one-command demo stack (Postgres + app in Docker):
+
+```bash
+export AUTH_SECRET="$(openssl rand -base64 32)"
+docker compose -f docker-compose.stack.yml up --build -d
+# http://localhost:3000 — demo-firm / admin@demo.com / password123
+```
+
+See [`docs/deploy.md`](docs/deploy.md) for Railway, Fly.io, manual Node deployment, and the production checklist.
+
 ## Scripts
 
 | Command | Description |
@@ -88,6 +104,7 @@ Local Docker Postgres listens on **port 5440** (mapped from container 5432).
 | `npm run db:seed` | Reset and seed demo data |
 | `npm run check:boundaries` | Module import boundary lint |
 | `./scripts/verify.sh` | Full local verification gate |
+| `npm run screenshots` | Capture README screenshots and demo GIF (requires running server) |
 
 ## Project layout
 
@@ -106,6 +123,7 @@ Domain logic lives in `lib/<domain>/service.ts`. Cross-domain imports must go th
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the pull request checklist.
 
+- [Q&A Discussions](https://github.com/SafetyMP/Professional-Service-Automation/discussions/categories/q-a)
 - [Bug reports](.github/ISSUE_TEMPLATE/bug_report.yml)
 - [Feature requests](.github/ISSUE_TEMPLATE/feature_request.yml)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
@@ -122,6 +140,7 @@ GitHub Actions runs `./scripts/verify.sh` on push and pull request with a Postgr
 
 ## Documentation
 
+- [`docs/deploy.md`](docs/deploy.md) — Docker, Railway, Fly.io, and production checklist
 - [`docs/development.md`](docs/development.md) — local setup, architecture, testing, and common tasks
 - [`AGENTS.md`](AGENTS.md) — agent/developer contract for this repo
 - [`specs/domain/billing-rules.md`](specs/domain/billing-rules.md) — billing model rules

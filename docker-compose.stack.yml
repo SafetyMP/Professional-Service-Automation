@@ -1,0 +1,44 @@
+# Full stack: Postgres + PSA app (production-style)
+# Usage:
+#   export AUTH_SECRET="$(openssl rand -base64 32)"
+#   docker compose -f docker-compose.stack.yml up --build -d
+#   open http://localhost:3000  (demo-firm / admin@demo.com / password123)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: psa
+    volumes:
+      - psa_stack_pg_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d psa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: postgres
+      POSTGRES_PASSWORD: postgres
+      DATABASE_URL: postgresql://psa_app:psa_app_dev@postgres:5432/psa?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/psa?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET — e.g. openssl rand -base64 32}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  psa_stack_pg_data:

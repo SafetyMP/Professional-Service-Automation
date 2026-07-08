@@ -120,6 +120,7 @@ GitHub Actions runs the same gate as local `./scripts/verify.sh` plus `npm run b
 
 ## Related docs
 
+- [`docs/deploy.md`](deploy.md) — production deployment and Docker stack
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — PR process and review priorities
 - [AGENTS.md](../AGENTS.md) — agent/developer contract
 - [specs/product/mvp-scope.md](../specs/product/mvp-scope.md) — Phase 1 vs Phase 2 scope

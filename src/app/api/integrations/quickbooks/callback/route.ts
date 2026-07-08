@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const payload = verifyOAuthState(state);
+    const payload = await verifyOAuthState(state);
     const tokens = await exchangeQuickBooksAuthorizationCode(code);
 
     await upsertAccountingConnection(payload.organizationId, {

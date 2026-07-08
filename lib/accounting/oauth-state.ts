@@ -1,53 +1,41 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { hkdfSync, randomBytes } from "node:crypto";
+import { SignJWT, jwtVerify } from "jose";
 
-const STATE_TTL_MS = 10 * 60 * 1000;
+const STATE_TTL = "10m";
+const HKDF_INFO = "psa-oauth-state-v1";
 
-type OAuthStatePayload = {
+export type OAuthStatePayload = {
   organizationId: string;
   userId: string;
-  nonce: string;
-  exp: number;
 };
 
-function getStateSecret(): string {
+function getSigningKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret) throw new Error("AUTH_SECRET is required for OAuth state");
-  return secret;
+  return new Uint8Array(hkdfSync("sha256", secret, "", HKDF_INFO, 32));
 }
 
-function signPayload(encoded: string): string {
-  return createHmac("sha256", getStateSecret()).update(encoded).digest("base64url");
+export async function createOAuthState(organizationId: string, userId: string): Promise<string> {
+  const key = getSigningKey();
+  return new SignJWT({ organizationId, userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setJti(randomBytes(16).toString("hex"))
+    .setIssuedAt()
+    .setExpirationTime(STATE_TTL)
+    .sign(key);
 }
 
-export function createOAuthState(organizationId: string, userId: string): string {
-  const payload: OAuthStatePayload = {
-    organizationId,
-    userId,
-    nonce: randomBytes(16).toString("hex"),
-    exp: Date.now() + STATE_TTL_MS,
-  };
-  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  return `${encoded}.${signPayload(encoded)}`;
-}
+export async function verifyOAuthState(state: string): Promise<OAuthStatePayload> {
+  const key = getSigningKey();
+  const { payload } = await jwtVerify(state, key, {
+    algorithms: ["HS256"],
+  });
 
-export function verifyOAuthState(state: string): OAuthStatePayload {
-  const [encoded, signature] = state.split(".");
-  if (!encoded || !signature) throw new Error("Invalid OAuth state");
-
-  const expected = signPayload(encoded);
-  const sigBuf = Buffer.from(signature);
-  const expBuf = Buffer.from(expected);
-  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
-    throw new Error("Invalid OAuth state signature");
-  }
-
-  const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as OAuthStatePayload;
-  if (!payload.organizationId || !payload.userId || !payload.exp) {
+  const organizationId = payload.organizationId;
+  const userId = payload.userId;
+  if (typeof organizationId !== "string" || typeof userId !== "string") {
     throw new Error("Invalid OAuth state payload");
   }
-  if (Date.now() > payload.exp) {
-    throw new Error("OAuth state expired");
-  }
 
-  return payload;
+  return { organizationId, userId };
 }

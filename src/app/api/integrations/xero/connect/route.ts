@@ -19,7 +19,7 @@ export async function GET() {
     );
   }
 
-  const state = createOAuthState(session.user.organizationId, session.user.id);
+  const state = await createOAuthState(session.user.organizationId, session.user.id);
   const url = buildXeroAuthorizeUrl(state);
   return NextResponse.redirect(url);
 }

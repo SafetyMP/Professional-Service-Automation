@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const payload = verifyOAuthState(state);
+    const payload = await verifyOAuthState(state);
     const tokens = await exchangeXeroAuthorizationCode(code);
     const connections = await fetchXeroConnections(tokens.access_token);
     const tenant = connections[0];

@@ -16,6 +16,12 @@ Open-source Professional Services Automation platform for consulting and profess
 - **Reporting** — project profitability (billed vs unbilled), dashboard WIP metrics
 - **Row-level security** — PostgreSQL RLS enforces organization isolation
 
+## Screenshots
+
+| Dashboard | Invoices | Profitability |
+|-----------|----------|---------------|
+| ![Dashboard](docs/images/dashboard.png) | ![Invoices](docs/images/invoices.png) | ![Profitability](docs/images/profitability.png) |
+
 ## Stack
 
 - [Next.js 16](https://nextjs.org/) (App Router) · [React 19](https://react.dev/) · [TypeScript 6](https://www.typescriptlang.org/)
@@ -116,6 +122,7 @@ GitHub Actions runs `./scripts/verify.sh` on push and pull request with a Postgr
 
 ## Documentation
 
+- [`docs/development.md`](docs/development.md) — local setup, architecture, testing, and common tasks
 - [`AGENTS.md`](AGENTS.md) — agent/developer contract for this repo
 - [`specs/domain/billing-rules.md`](specs/domain/billing-rules.md) — billing model rules
 - [`specs/domain/profitability-rules.md`](specs/domain/profitability-rules.md) — profitability calculations

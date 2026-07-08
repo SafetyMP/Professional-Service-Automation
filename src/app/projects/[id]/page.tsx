@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { getProject, listOrgUsers } from "@/lib/projects/service";
 import { getProjectBillingStatus } from "@/lib/billing/service";
 import { listProjectMilestones } from "@/lib/milestones/service";
+import { validateMilestoneTotals } from "@/lib/milestones/validation";
 import { getProjectProfitabilityDetail } from "@/lib/reporting/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   createMilestoneAction,
   createTaskAction,
   deleteMilestoneAction,
+  reorderMilestoneAction,
   toggleTaskAction,
   updateMilestoneStatusAction,
   updateProjectAction,
@@ -60,6 +62,10 @@ export default async function ProjectDetailPage({
   const orgUsers = await listOrgUsers(session.user.organizationId);
   const canManage = hasMinRole(session.user.role, "MANAGER");
   const memberIds = new Set(project.members.map((m) => m.userId));
+  const milestoneValidation =
+    project.billingModel === "MILESTONE"
+      ? validateMilestoneTotals(projectMilestones, project.contractAmount)
+      : null;
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
@@ -169,6 +175,34 @@ export default async function ProjectDetailPage({
             <CardTitle>Milestones</CardTitle>
           </CardHeader>
           <CardContent>
+            {milestoneValidation && milestoneValidation.contractAmount != null && (
+              <div className="mb-4 grid gap-4 sm:grid-cols-3">
+                <StatCard
+                  label="Contract Value"
+                  value={`$${formatCurrency(milestoneValidation.contractAmount)}`}
+                  accent="primary"
+                />
+                <StatCard
+                  label="Milestone Total"
+                  value={`$${formatCurrency(milestoneValidation.total)}`}
+                  accent="info"
+                />
+                <StatCard
+                  label="Remaining"
+                  value={
+                    milestoneValidation.remaining != null
+                      ? `$${formatCurrency(milestoneValidation.remaining)}`
+                      : "—"
+                  }
+                  accent={milestoneValidation.exceedsContract ? "warning" : "default"}
+                />
+              </div>
+            )}
+            {milestoneValidation?.exceedsContract && (
+              <Alert variant="destructive" className="mb-4">
+                Milestone total exceeds contract amount. Adjust milestones or contract value before invoicing.
+              </Alert>
+            )}
             {canManage && (
               <form action={createMilestoneAction} className="mb-4 grid gap-3 sm:grid-cols-4">
                 <input type="hidden" name="projectId" value={project.id} />
@@ -205,7 +239,7 @@ export default async function ProjectDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {projectMilestones.map((milestone) => (
+                  {projectMilestones.map((milestone, index) => (
                     <TableRow key={milestone.id}>
                       <TableCell className="font-medium">{milestone.name}</TableCell>
                       <TableCell>
@@ -232,6 +266,44 @@ export default async function ProjectDetailPage({
                       {canManage && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {milestone.status !== "INVOICED" && (
+                              <>
+                                <form
+                                  action={reorderMilestoneAction.bind(
+                                    null,
+                                    milestone.id,
+                                    project.id,
+                                    "up",
+                                  )}
+                                >
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={index === 0}
+                                  >
+                                    ↑
+                                  </Button>
+                                </form>
+                                <form
+                                  action={reorderMilestoneAction.bind(
+                                    null,
+                                    milestone.id,
+                                    project.id,
+                                    "down",
+                                  )}
+                                >
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={index === projectMilestones.length - 1}
+                                  >
+                                    ↓
+                                  </Button>
+                                </form>
+                              </>
+                            )}
                             {milestone.status === "PLANNED" && (
                               <>
                                 <form

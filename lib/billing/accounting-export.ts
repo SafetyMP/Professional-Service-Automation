@@ -44,7 +44,7 @@ function formatQuickBooksDate(date: Date): string {
   return `${month}/${day}/${year}`;
 }
 
-function splitInvoiceRevenue(lines: JournalInvoice["lines"]): {
+export function splitInvoiceRevenue(lines: JournalInvoice["lines"]): {
   timeRevenue: number;
   expenseRevenue: number;
 } {

@@ -12,6 +12,8 @@ import * as billing from "@/lib/billing/service";
 import * as expenses from "@/lib/expenses/service";
 import * as milestones from "@/lib/milestones/service";
 import * as accountingSettings from "@/lib/settings/accounting";
+import { deleteAccountingConnection } from "@/lib/accounting/connections";
+import { pushInvoiceToXero } from "@/lib/accounting/xero/push-invoice";
 
 export async function createClientAction(formData: FormData) {
   const user = await requireSession();
@@ -362,6 +364,22 @@ export async function deleteMilestoneAction(milestoneId: string, projectId: stri
   revalidatePath(`/projects/${projectId}`);
 }
 
+export async function reorderMilestoneAction(
+  milestoneId: string,
+  projectId: string,
+  direction: "up" | "down",
+) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await milestones.reorderMilestone(user.organizationId, milestoneId, direction);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to reorder milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
 export async function updateAccountingSettingsAction(formData: FormData) {
   const user = await requireSession();
   requireRole(user, "ADMIN");
@@ -369,6 +387,28 @@ export async function updateAccountingSettingsAction(formData: FormData) {
     arAccountName: String(formData.get("arAccountName")),
     serviceRevenueAccount: String(formData.get("serviceRevenueAccount")),
     expenseRevenueAccount: String(formData.get("expenseRevenueAccount")),
+    arAccountCode: String(formData.get("arAccountCode") || "") || null,
+    serviceRevenueAccountCode: String(formData.get("serviceRevenueAccountCode") || "") || null,
+    expenseRevenueAccountCode: String(formData.get("expenseRevenueAccountCode") || "") || null,
   });
   revalidatePath("/settings/accounting");
+}
+
+export async function disconnectXeroAction() {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  await deleteAccountingConnection(user.organizationId, "XERO");
+  revalidatePath("/settings/accounting");
+}
+
+export async function pushInvoiceToXeroAction(invoiceId: string) {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  try {
+    await pushInvoiceToXero(user.organizationId, invoiceId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to push invoice to Xero";
+    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/invoices/${invoiceId}`);
 }

@@ -11,6 +11,9 @@ const customAccounts: ChartOfAccounts = {
   arAccountName: "1200 Accounts Receivable",
   serviceRevenueAccount: "4000 Consulting Revenue",
   expenseRevenueAccount: "4100 Reimbursable Revenue",
+  arAccountCode: null,
+  serviceRevenueAccountCode: null,
+  expenseRevenueAccountCode: null,
 };
 
 const sampleInvoice = {

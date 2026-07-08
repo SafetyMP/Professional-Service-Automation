@@ -23,28 +23,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { updateInvoiceStatusAction } from "@/app/actions";
+import { updateInvoiceStatusAction, pushInvoiceToXeroAction } from "@/app/actions";
+import { getAccountingConnection } from "@/lib/accounting/connections";
+import { isXeroConfigured } from "@/lib/accounting/xero/config";
+import { Alert } from "@/components/ui/alert";
 import { hasMinRole } from "@/lib/auth/rbac";
 
 export default async function InvoiceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
   });
-  const [invoice, accounts] = await Promise.all([
+  const [invoice, accounts, xeroConnection] = await Promise.all([
     getInvoice(session.user.organizationId, id),
     getChartOfAccounts(session.user.organizationId),
+    getAccountingConnection(session.user.organizationId, "XERO"),
   ]);
   if (!invoice) notFound();
 
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
+  const canPushXero = isAdmin && Boolean(xeroConnection) && isXeroConfigured();
   const csv = invoiceToCsv(invoice);
   const journalPayload = {
     invoiceNumber: invoice.invoiceNumber,
@@ -72,6 +80,13 @@ export default async function InvoiceDetailPage({
           </Badge>
         }
       />
+
+      {error && <Alert variant="destructive" className="mb-6">{error}</Alert>}
+      {invoice.xeroJournalId && (
+        <Alert className="mb-6">
+          Pushed to Xero (journal {invoice.xeroJournalId})
+        </Alert>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -166,6 +181,11 @@ export default async function InvoiceDetailPage({
             QuickBooks CSV
           </Button>
         </a>
+        {canPushXero && !invoice.xeroJournalId && (
+          <form action={pushInvoiceToXeroAction.bind(null, invoice.id)}>
+            <Button type="submit">Push to Xero</Button>
+          </form>
+        )}
       </div>
     </AppShell>
   );

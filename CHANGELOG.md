@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-08
+
+### Added
+
+- Xero OAuth integration: connect/disconnect in Settings → Accounting, push manual journals from invoice detail
+- Optional Xero account codes on chart of accounts for API journal pushes
+- Milestone contract validation: warns when milestone totals exceed contract amount
+- Milestone reorder controls (↑/↓) on project detail
+- Expense summary by category table for managers on the Expenses page
+
+### Changed
+
+- Accounting settings page includes Xero connection status and account code fields
+- Invoice detail shows Xero push status and journal ID after successful push
+
 ## [0.3.0] - 2026-07-07
 
 ### Added

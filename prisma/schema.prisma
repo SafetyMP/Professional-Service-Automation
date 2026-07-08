@@ -69,6 +69,10 @@ enum AuditAction {
   INVOICE_PAID
 }
 
+enum AccountingProvider {
+  XERO
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -76,6 +80,9 @@ model Organization {
   arAccountName         String @default("Accounts Receivable")
   serviceRevenueAccount String @default("Service Revenue")
   expenseRevenueAccount String @default("Expense Revenue")
+  arAccountCode         String?
+  serviceRevenueAccountCode String?
+  expenseRevenueAccountCode String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -93,6 +100,7 @@ model Organization {
   expenseCategories ExpenseCategory[]
   auditLogs       AuditLog[]
   milestones      Milestone[]
+  accountingConnections AccountingConnection[]
 }
 
 model User {
@@ -280,6 +288,7 @@ model Invoice {
   issueDate      DateTime      @db.Date
   dueDate        DateTime      @db.Date
   subtotal       Decimal       @default(0) @db.Decimal(12, 2)
+  xeroJournalId  String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -392,4 +401,22 @@ model AuditLog {
   user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
+}
+
+model AccountingConnection {
+  id             String             @id @default(cuid())
+  organizationId String
+  provider       AccountingProvider @default(XERO)
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  tenantId       String
+  tenantName     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+  @@index([organizationId])
 }

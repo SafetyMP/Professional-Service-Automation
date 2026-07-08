@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatBillingModel, formatCurrency, formatPercent } from "@/lib/utils/format";
 
 function marginVariant(marginPct: number | null): "success" | "warning" | "default" {
   if (marginPct == null) return "default";
@@ -37,10 +37,10 @@ export default async function ProfitabilityPage() {
   const report = await getProjectProfitabilityReport(session.user.organizationId);
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Project Profitability"
-        description="Revenue from approved billable time and expenses. Billed revenue is on invoices; unbilled is approved work not yet invoiced."
+        description="Revenue from approved billable work and invoices. T&M projects use hours × rate; fixed-fee and retainer projects use invoice totals and remaining contract balance."
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -79,6 +79,47 @@ export default async function ProfitabilityPage() {
         />
       </div>
 
+      {report.expenseByCategory.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Expenses by Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">Count</TableHead>
+                  <TableHead className="text-right">Approved</TableHead>
+                  <TableHead className="text-right">Pending</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {report.expenseByCategory.map((row) => (
+                  <TableRow key={row.categoryId ?? "uncategorized"}>
+                    <TableCell className="font-medium">
+                      {row.categoryName}
+                      {row.categoryCode ? ` (${row.categoryCode})` : ""}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">{row.count}</TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.approvedTotal)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.pendingTotal)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.total)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>By Project</CardTitle>
@@ -96,7 +137,10 @@ export default async function ProfitabilityPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Project</TableHead>
                   <TableHead>Client</TableHead>
+                  <TableHead>Billing</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Contract</TableHead>
+                  <TableHead className="text-right">Remaining</TableHead>
                   <TableHead className="text-right">Billed</TableHead>
                   <TableHead className="text-right">Unbilled</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
@@ -120,7 +164,22 @@ export default async function ProfitabilityPage() {
                       {row.clientName}
                     </TableCell>
                     <TableCell>
+                      <Badge variant="outline">{formatBillingModel(row.billingModel)}</Badge>
+                    </TableCell>
+                    <TableCell>
                       <Badge variant="outline">{row.status}</Badge>
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      {row.billingModel === "MILESTONE" && row.milestoneTotal != null
+                        ? `$${formatCurrency(row.milestoneTotal)}`
+                        : row.contractAmount != null
+                          ? `$${formatCurrency(row.contractAmount)}`
+                          : "—"}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      {row.contractRemaining != null
+                        ? `$${formatCurrency(row.contractRemaining)}`
+                        : "—"}
                     </TableCell>
                     <TableCell className="tabular-nums text-right">
                       ${formatCurrency(row.billedRevenue)}

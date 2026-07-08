@@ -8,12 +8,20 @@ describe("computeProjectProfitability", () => {
       name: "Alpha",
       clientName: "Acme",
       status: "ACTIVE" as const,
+      billingModel: "TIME_AND_MATERIALS" as const,
+      contractAmount: null,
+      invoicedTotal: 0,
+      milestones: [],
     },
     {
       id: "p2",
       name: "Beta",
       clientName: "Globex",
       status: "ACTIVE" as const,
+      billingModel: "TIME_AND_MATERIALS" as const,
+      contractAmount: null,
+      invoicedTotal: 0,
+      milestones: [],
     },
   ];
 
@@ -153,6 +161,134 @@ describe("computeProjectProfitability", () => {
     expect(alpha?.unbilledRevenue).toBe(1225);
     expect(alpha?.revenue).toBe(2075);
   });
+
+  it("uses invoice totals for fixed-fee revenue instead of billable time", () => {
+    const report = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Website Redesign",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "FIXED_FEE",
+          contractAmount: 48_000,
+          invoicedTotal: 24_000,
+          milestones: [],
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          userId: "u1",
+          hours: 120,
+          billable: true,
+          billingStatus: "UNBILLED",
+          billRateOverride: null,
+        },
+      ],
+      [],
+      profiles,
+    );
+
+    const row = report.projects[0];
+    expect(row.billedRevenue).toBe(24_000);
+    expect(row.unbilledRevenue).toBe(24_000);
+    expect(row.revenue).toBe(48_000);
+    expect(row.cost).toBe(9_600);
+    expect(row.margin).toBe(38_400);
+    expect(row.marginPct).toBe(80);
+  });
+
+  it("adds billable expenses to contract project revenue", () => {
+    const report = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Retainer",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "RETAINER",
+          contractAmount: 10_000,
+          invoicedTotal: 10_000,
+          milestones: [],
+        },
+      ],
+      [],
+      [{ projectId: "p1", amount: 250, billable: true, billingStatus: "UNBILLED" }],
+      profiles,
+    );
+
+    const row = report.projects[0];
+    expect(row.billedRevenue).toBe(10_000);
+    expect(row.unbilledRevenue).toBe(250);
+    expect(row.revenue).toBe(10_250);
+    expect(row.contractRemaining).toBe(0);
+  });
+
+  it("exposes milestone totals and contract remaining on milestone projects", () => {
+    const report = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Product Launch",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "MILESTONE",
+          contractAmount: 30_000,
+          invoicedTotal: 10_000,
+          milestones: [
+            { amount: 10_000, status: "INVOICED" },
+            { amount: 15_000, status: "READY" },
+          ],
+        },
+      ],
+      [],
+      [],
+      profiles,
+    );
+
+    const row = report.projects[0];
+    expect(row.milestoneTotal).toBe(25_000);
+    expect(row.contractRemaining).toBe(5_000);
+  });
+
+  it("uses milestone totals for milestone project unbilled revenue", () => {
+    const report = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Product Launch",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "MILESTONE",
+          contractAmount: 30_000,
+          invoicedTotal: 10_000,
+          milestones: [
+            { amount: 10_000, status: "INVOICED" },
+            { amount: 12_000, status: "READY" },
+            { amount: 8_000, status: "PLANNED" },
+          ],
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          userId: "u1",
+          hours: 40,
+          billable: true,
+          billingStatus: "UNBILLED",
+          billRateOverride: null,
+        },
+      ],
+      [],
+      profiles,
+    );
+
+    const row = report.projects[0];
+    expect(row.billedRevenue).toBe(10_000);
+    expect(row.unbilledRevenue).toBe(20_000);
+    expect(row.revenue).toBe(30_000);
+  });
 });
 
 describe("computeProjectProfitabilityDetail", () => {
@@ -168,6 +304,10 @@ describe("computeProjectProfitabilityDetail", () => {
   it("breaks down revenue by person and source", () => {
     const detail = computeProjectProfitabilityDetail(
       "p1",
+      "TIME_AND_MATERIALS",
+      null,
+      0,
+      [],
       null,
       [
         {
@@ -189,7 +329,7 @@ describe("computeProjectProfitabilityDetail", () => {
           billRateOverride: null,
         },
       ],
-      [{ projectId: "p1", userId: "u1", amount: 85.42, billable: true, billingStatus: "INVOICED" }],
+      [{ projectId: "p1", userId: "u1", amount: 85.42, billable: true, billingStatus: "INVOICED", categoryId: "c1", categoryName: "Travel", categoryCode: "TRAVEL" }],
       profiles,
       userNames,
     );
@@ -201,5 +341,40 @@ describe("computeProjectProfitabilityDetail", () => {
     expect(detail.byPerson).toHaveLength(2);
     expect(detail.byPerson[0].userName).toBe("Alex");
     expect(detail.byPerson[0].margin).toBe(600);
+  });
+
+  it("uses contract invoices for service revenue on fixed-fee projects", () => {
+    const detail = computeProjectProfitabilityDetail(
+      "p1",
+      "FIXED_FEE",
+      50_000,
+      20_000,
+      [],
+      null,
+      [
+        {
+          projectId: "p1",
+          userId: "u1",
+          userName: "Alex",
+          hours: 80,
+          billable: true,
+          billingStatus: "UNBILLED",
+          billRateOverride: null,
+        },
+      ],
+      [{ projectId: "p1", userId: "u1", amount: 100, billable: true, billingStatus: "UNBILLED", categoryId: null, categoryName: "Uncategorized", categoryCode: null }],
+      profiles,
+      userNames,
+    );
+
+    expect(detail.summary.billedRevenue).toBe(20_000);
+    expect(detail.summary.unbilledRevenue).toBe(30_100);
+    expect(detail.summary.revenue).toBe(50_100);
+    expect(detail.timeRevenue.billed).toBe(20_000);
+    expect(detail.timeRevenue.unbilled).toBe(30_000);
+    expect(detail.expenseRevenue.unbilled).toBe(100);
+    expect(detail.byPerson[0].billedRevenue).toBe(0);
+    expect(detail.byPerson[0].unbilledRevenue).toBe(100);
+    expect(detail.byPerson[0].cost).toBe(6_500);
   });
 });

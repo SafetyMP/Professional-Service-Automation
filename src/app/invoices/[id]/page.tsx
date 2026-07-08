@@ -3,7 +3,12 @@ import { redirect, notFound } from "next/navigation";
 import { Download, Eye } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { getInvoice, invoiceToCsv, invoiceToJournalCsv } from "@/lib/billing/service";
+import {
+  getInvoice,
+  invoiceToCsv,
+  exportInvoiceJournalCsv,
+} from "@/lib/billing/service";
+import { getChartOfAccounts } from "@/lib/settings/accounting";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,36 +23,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { updateInvoiceStatusAction } from "@/app/actions";
+import { updateInvoiceStatusAction, pushInvoiceToXeroAction, pushInvoiceToQuickBooksAction } from "@/app/actions";
+import { getAccountingConnection } from "@/lib/accounting/connections";
+import { isXeroConfigured } from "@/lib/accounting/xero/config";
+import { isQuickBooksConfigured } from "@/lib/accounting/quickbooks/config";
+import { Alert } from "@/components/ui/alert";
 import { hasMinRole } from "@/lib/auth/rbac";
 
 export default async function InvoiceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
   });
-  const invoice = await getInvoice(session.user.organizationId, id);
+  const [invoice, accounts, xeroConnection, quickbooksConnection] = await Promise.all([
+    getInvoice(session.user.organizationId, id),
+    getChartOfAccounts(session.user.organizationId),
+    getAccountingConnection(session.user.organizationId, "XERO"),
+    getAccountingConnection(session.user.organizationId, "QUICKBOOKS"),
+  ]);
   if (!invoice) notFound();
 
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
+  const canPushXero = isAdmin && Boolean(xeroConnection) && isXeroConfigured();
+  const canPushQuickBooks =
+    isAdmin && Boolean(quickbooksConnection) && isQuickBooksConfigured();
   const csv = invoiceToCsv(invoice);
-  const journalCsv = invoiceToJournalCsv({
+  const journalPayload = {
     invoiceNumber: invoice.invoiceNumber,
     issueDate: invoice.issueDate,
     clientName: invoice.project.client.name,
     subtotal: invoice.subtotal,
     lines: invoice.lines,
-  });
+  };
+  const journalCsv = exportInvoiceJournalCsv(journalPayload, "generic", accounts);
+  const xeroCsv = exportInvoiceJournalCsv(journalPayload, "xero", accounts);
+  const quickBooksCsv = exportInvoiceJournalCsv(journalPayload, "quickbooks", accounts);
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title={invoice.invoiceNumber}
         description={`${invoice.project.name} — ${invoice.project.client.name}`}
@@ -61,6 +84,18 @@ export default async function InvoiceDetailPage({
           </Badge>
         }
       />
+
+      {error && <Alert variant="destructive" className="mb-6">{error}</Alert>}
+      {invoice.xeroJournalId && (
+        <Alert className="mb-6">
+          Pushed to Xero (journal {invoice.xeroJournalId})
+        </Alert>
+      )}
+      {invoice.quickbooksJournalId && (
+        <Alert className="mb-6">
+          Pushed to QuickBooks (journal {invoice.quickbooksJournalId})
+        </Alert>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -136,9 +171,37 @@ export default async function InvoiceDetailPage({
           download={`${invoice.invoiceNumber}-journal.csv`}
         >
           <Button type="button" variant="outline">
-            Export Journal CSV
+            Journal CSV
           </Button>
         </a>
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(xeroCsv)}`}
+          download={`${invoice.invoiceNumber}-xero.csv`}
+        >
+          <Button type="button" variant="outline">
+            Xero CSV
+          </Button>
+        </a>
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(quickBooksCsv)}`}
+          download={`${invoice.invoiceNumber}-quickbooks.csv`}
+        >
+          <Button type="button" variant="outline">
+            QuickBooks CSV
+          </Button>
+        </a>
+        {canPushXero && !invoice.xeroJournalId && (
+          <form action={pushInvoiceToXeroAction.bind(null, invoice.id)}>
+            <Button type="submit">Push to Xero</Button>
+          </form>
+        )}
+        {canPushQuickBooks && !invoice.quickbooksJournalId && (
+          <form action={pushInvoiceToQuickBooksAction.bind(null, invoice.id)}>
+            <Button type="submit" variant="outline">
+              Push to QuickBooks
+            </Button>
+          </form>
+        )}
       </div>
     </AppShell>
   );

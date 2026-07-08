@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import type { OrgRole } from "@prisma/client";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
@@ -9,10 +10,12 @@ import { cn } from "@/lib/utils/cn";
 export function AppShell({
   orgName,
   userName,
+  userRole,
   children,
 }: {
   orgName: string;
   userName: string;
+  userRole: OrgRole;
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -21,7 +24,7 @@ export function AppShell({
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 bg-[var(--color-sidebar)] lg:block">
-        <SidebarNav orgName={orgName} userName={userName} />
+        <SidebarNav orgName={orgName} userName={userName} userRole={userRole} />
       </aside>
 
       {/* Mobile overlay */}
@@ -42,6 +45,7 @@ export function AppShell({
         <SidebarNav
           orgName={orgName}
           userName={userName}
+          userRole={userRole}
           onNavigate={() => setMobileOpen(false)}
         />
       </aside>

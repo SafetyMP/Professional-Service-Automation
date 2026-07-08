@@ -1,5 +1,15 @@
-import type { ProjectStatus } from "@prisma/client";
+import type { BillingModel, ProjectStatus } from "@prisma/client";
 import { resolveEntryBillRate, resolveEntryCostRate } from "@/lib/billing/service";
+import type { ExpenseCategorySummary } from "@/lib/expenses/summary";
+import { getExpenseSummaryByCategory } from "@/lib/expenses/summary";
+import {
+  sumMilestoneAmounts,
+  validateMilestoneTotals,
+} from "@/lib/milestones/validation";
+import {
+  computeInvoiceBasedRevenue,
+  isInvoiceBasedRevenueModel,
+} from "@/lib/reporting/contract-profitability";
 import { withOrgContext } from "@/lib/tenancy/with-org-context";
 
 export type ProjectProfitabilityRow = {
@@ -7,6 +17,10 @@ export type ProjectProfitabilityRow = {
   projectName: string;
   clientName: string;
   status: ProjectStatus;
+  billingModel: BillingModel;
+  contractAmount: number | null;
+  milestoneTotal: number | null;
+  contractRemaining: number | null;
   revenue: number;
   billedRevenue: number;
   unbilledRevenue: number;
@@ -27,6 +41,16 @@ export type ProfitabilitySummary = {
 export type ProjectProfitabilityReport = {
   projects: ProjectProfitabilityRow[];
   summary: ProfitabilitySummary;
+  expenseByCategory: ExpenseCategorySummary[];
+};
+
+export type ProjectExpenseCategoryRow = {
+  categoryId: string | null;
+  categoryName: string;
+  categoryCode: string | null;
+  total: number;
+  billed: number;
+  unbilled: number;
 };
 
 export type RevenueBreakdown = {
@@ -50,6 +74,7 @@ export type ProjectProfitabilityDetail = {
   summary: ProfitabilitySummary;
   timeRevenue: RevenueBreakdown;
   expenseRevenue: RevenueBreakdown;
+  expenseByCategory: ProjectExpenseCategoryRow[];
   byPerson: PersonProfitabilityRow[];
 };
 
@@ -75,13 +100,22 @@ type ProfitabilityExpenseEntry = {
 };
 
 type DetailTimeEntry = ProfitabilityTimeEntry & { userName: string };
-type DetailExpenseEntry = ProfitabilityExpenseEntry & { userId: string };
+type DetailExpenseEntry = ProfitabilityExpenseEntry & {
+  userId: string;
+  categoryId: string | null;
+  categoryName: string;
+  categoryCode: string | null;
+};
 
 type ProfitabilityProject = {
   id: string;
   name: string;
   clientName: string;
   status: ProjectStatus;
+  billingModel: BillingModel;
+  contractAmount: number | null;
+  invoicedTotal: number;
+  milestones: Array<{ amount: number; status: "PLANNED" | "READY" | "INVOICED" }>;
 };
 
 function roundCurrency(value: number): number {
@@ -142,6 +176,10 @@ function buildDetailSummary(
 
 export function computeProjectProfitabilityDetail(
   projectId: string,
+  billingModel: BillingModel,
+  contractAmount: number | null,
+  invoicedTotal: number,
+  milestones: Array<{ amount: number; status: "PLANNED" | "READY" | "INVOICED" }>,
   billRateOverride: number | null,
   timeEntries: DetailTimeEntry[],
   expenses: DetailExpenseEntry[],
@@ -150,12 +188,21 @@ export function computeProjectProfitabilityDetail(
 ): ProjectProfitabilityDetail {
   const projectTime = timeEntries.filter((entry) => entry.projectId === projectId);
   const projectExpenses = expenses.filter((expense) => expense.projectId === projectId);
+  const invoiceProject = isInvoiceBasedRevenueModel(billingModel);
+  const invoiceRevenue = invoiceProject
+    ? computeInvoiceBasedRevenue({
+        billingModel,
+        contractAmount,
+        invoicedTotal,
+        milestones,
+      })
+    : null;
 
-  let billedRevenue = 0;
-  let unbilledRevenue = 0;
+  let billedRevenue = invoiceRevenue?.billedRevenue ?? 0;
+  let unbilledRevenue = invoiceRevenue?.unbilledRevenue ?? 0;
   let totalCost = 0;
-  let timeBilled = 0;
-  let timeUnbilled = 0;
+  let timeBilled = invoiceRevenue?.billedRevenue ?? 0;
+  let timeUnbilled = invoiceRevenue?.unbilledRevenue ?? 0;
   let expenseBilled = 0;
   let expenseUnbilled = 0;
 
@@ -192,7 +239,7 @@ export function computeProjectProfitabilityDetail(
     person.cost += laborCost;
     totalCost += laborCost;
 
-    if (entry.billable) {
+    if (entry.billable && !invoiceProject) {
       const billRate = resolveEntryBillRate(
         { billRateOverride: billRateOverride ?? entry.billRateOverride },
         profile ? { billRate: profile.billRate } : null,
@@ -228,6 +275,30 @@ export function computeProjectProfitabilityDetail(
     }
   }
 
+  const expenseByCategoryMap = new Map<string, ProjectExpenseCategoryRow>();
+  for (const expense of projectExpenses) {
+    const key = expense.categoryId ?? "__uncategorized__";
+    const row = expenseByCategoryMap.get(key) ?? {
+      categoryId: expense.categoryId,
+      categoryName: expense.categoryName,
+      categoryCode: expense.categoryCode,
+      total: 0,
+      billed: 0,
+      unbilled: 0,
+    };
+    row.total += expense.amount;
+    if (expense.billable) {
+      if (expense.billingStatus === "INVOICED") {
+        row.billed += expense.amount;
+      } else {
+        row.unbilled += expense.amount;
+      }
+    }
+    expenseByCategoryMap.set(key, row);
+  }
+
+  const expenseByCategory = [...expenseByCategoryMap.values()].sort((a, b) => b.total - a.total);
+
   const byPerson = [...personStats.entries()]
     .map(([userId, stats]) => {
       const revenue = roundCurrency(stats.billedRevenue + stats.unbilledRevenue);
@@ -249,6 +320,7 @@ export function computeProjectProfitabilityDetail(
     summary: buildDetailSummary(billedRevenue, unbilledRevenue, totalCost),
     timeRevenue: buildRevenueBreakdown(timeBilled, timeUnbilled),
     expenseRevenue: buildRevenueBreakdown(expenseBilled, expenseUnbilled),
+    expenseByCategory,
     byPerson,
   };
 }
@@ -258,10 +330,11 @@ export function computeProjectProfitability(
   timeEntries: ProfitabilityTimeEntry[],
   expenses: ProfitabilityExpenseEntry[],
   profilesByUser: Map<string, ResourceProfileRates>,
-): ProjectProfitabilityReport {
+): { projects: ProjectProfitabilityRow[]; summary: ProfitabilitySummary } {
   const billedRevenueByProject = new Map<string, number>();
   const unbilledRevenueByProject = new Map<string, number>();
   const costByProject = new Map<string, number>();
+  const projectById = new Map(projects.map((project) => [project.id, project]));
 
   for (const entry of timeEntries) {
     const profile = profilesByUser.get(entry.userId);
@@ -273,7 +346,8 @@ export function computeProjectProfitability(
       (costByProject.get(entry.projectId) ?? 0) + laborCost,
     );
 
-    if (entry.billable) {
+    const project = projectById.get(entry.projectId);
+    if (entry.billable && (!project || !isInvoiceBasedRevenueModel(project.billingModel))) {
       const billRate = resolveEntryBillRate(
         { billRateOverride: entry.billRateOverride },
         profile ? { billRate: profile.billRate } : null,
@@ -306,16 +380,51 @@ export function computeProjectProfitability(
   }
 
   const rows = projects.map((project) => {
-    const billedRevenue = roundCurrency(billedRevenueByProject.get(project.id) ?? 0);
-    const unbilledRevenue = roundCurrency(unbilledRevenueByProject.get(project.id) ?? 0);
+    const expenseBilled = billedRevenueByProject.get(project.id) ?? 0;
+    const expenseUnbilled = unbilledRevenueByProject.get(project.id) ?? 0;
+
+    let billedRevenue: number;
+    let unbilledRevenue: number;
+
+    if (isInvoiceBasedRevenueModel(project.billingModel)) {
+      const invoiceBasedRevenue = computeInvoiceBasedRevenue({
+        billingModel: project.billingModel,
+        contractAmount: project.contractAmount,
+        invoicedTotal: project.invoicedTotal,
+        milestones: project.milestones,
+      });
+      billedRevenue = roundCurrency(invoiceBasedRevenue.billedRevenue + expenseBilled);
+      unbilledRevenue = roundCurrency(invoiceBasedRevenue.unbilledRevenue + expenseUnbilled);
+    } else {
+      billedRevenue = roundCurrency(expenseBilled);
+      unbilledRevenue = roundCurrency(expenseUnbilled);
+    }
+
     const revenue = roundCurrency(billedRevenue + unbilledRevenue);
     const cost = roundCurrency(costByProject.get(project.id) ?? 0);
     const margin = roundCurrency(revenue - cost);
+    const milestoneTotal =
+      project.billingModel === "MILESTONE" ? sumMilestoneAmounts(project.milestones) : null;
+    let contractRemaining: number | null = null;
+    if (project.contractAmount != null && isInvoiceBasedRevenueModel(project.billingModel)) {
+      if (project.billingModel === "MILESTONE") {
+        contractRemaining = validateMilestoneTotals(
+          project.milestones,
+          project.contractAmount,
+        ).remaining;
+      } else {
+        contractRemaining = roundCurrency(project.contractAmount - project.invoicedTotal);
+      }
+    }
     return {
       projectId: project.id,
       projectName: project.name,
       clientName: project.clientName,
       status: project.status,
+      billingModel: project.billingModel,
+      contractAmount: project.contractAmount,
+      milestoneTotal,
+      contractRemaining,
       revenue,
       billedRevenue,
       unbilledRevenue,
@@ -336,8 +445,9 @@ export function computeProjectProfitability(
 export async function getProjectProfitabilityReport(
   organizationId: string,
 ): Promise<ProjectProfitabilityReport> {
-  return withOrgContext(organizationId, async (tx) => {
-    const [projects, timeEntries, expenses, profiles] = await Promise.all([
+  const core = await withOrgContext(organizationId, async (tx) => {
+    const [projects, timeEntries, expenses, profiles, invoiceTotals, allMilestones] =
+      await Promise.all([
       tx.project.findMany({
         where: { organizationId },
         include: { client: true },
@@ -362,7 +472,32 @@ export async function getProjectProfitabilityReport(
         where: { organizationId },
         select: { userId: true, billRate: true, costRate: true },
       }),
+      tx.invoice.groupBy({
+        by: ["projectId"],
+        where: { organizationId },
+        _sum: { subtotal: true },
+      }),
+      tx.milestone.findMany({
+        where: { organizationId },
+        select: { projectId: true, amount: true, status: true },
+      }),
     ]);
+
+    const invoicedByProject = new Map(
+      invoiceTotals.map((row) => [row.projectId, Number(row._sum.subtotal ?? 0)]),
+    );
+    const milestonesByProject = new Map<
+      string,
+      Array<{ amount: number; status: "PLANNED" | "READY" | "INVOICED" }>
+    >();
+    for (const milestone of allMilestones) {
+      const list = milestonesByProject.get(milestone.projectId) ?? [];
+      list.push({
+        amount: Number(milestone.amount),
+        status: milestone.status,
+      });
+      milestonesByProject.set(milestone.projectId, list);
+    }
 
     const profilesByUser = new Map(
       profiles.map((profile) => [
@@ -380,6 +515,11 @@ export async function getProjectProfitabilityReport(
         name: project.name,
         clientName: project.client.name,
         status: project.status,
+        billingModel: project.billingModel,
+        contractAmount:
+          project.contractAmount != null ? Number(project.contractAmount) : null,
+        invoicedTotal: invoicedByProject.get(project.id) ?? 0,
+        milestones: milestonesByProject.get(project.id) ?? [],
       })),
       timeEntries.map((entry) => ({
         projectId: entry.projectId,
@@ -401,6 +541,9 @@ export async function getProjectProfitabilityReport(
       profilesByUser,
     );
   });
+
+  const expenseByCategory = await getExpenseSummaryByCategory(organizationId);
+  return { ...core, expenseByCategory };
 }
 
 export async function getProjectProfitabilityDetail(
@@ -410,11 +553,16 @@ export async function getProjectProfitabilityDetail(
   return withOrgContext(organizationId, async (tx) => {
     const project = await tx.project.findFirst({
       where: { id: projectId, organizationId },
-      select: { id: true, billRateOverride: true },
+      select: {
+        id: true,
+        billRateOverride: true,
+        billingModel: true,
+        contractAmount: true,
+      },
     });
     if (!project) return null;
 
-    const [timeEntries, expenses, profiles] = await Promise.all([
+    const [timeEntries, expenses, profiles, invoiced, milestones] = await Promise.all([
       tx.timeEntry.findMany({
         where: { organizationId, projectId, status: "APPROVED" },
         select: {
@@ -434,11 +582,21 @@ export async function getProjectProfitabilityDetail(
           amount: true,
           billable: true,
           billingStatus: true,
+          categoryId: true,
+          category: { select: { name: true, code: true } },
         },
       }),
       tx.resourceProfile.findMany({
         where: { organizationId },
         select: { userId: true, billRate: true, costRate: true },
+      }),
+      tx.invoice.aggregate({
+        where: { organizationId, projectId },
+        _sum: { subtotal: true },
+      }),
+      tx.milestone.findMany({
+        where: { organizationId, projectId },
+        select: { amount: true, status: true },
       }),
     ]);
 
@@ -468,6 +626,13 @@ export async function getProjectProfitabilityDetail(
 
     return computeProjectProfitabilityDetail(
       projectId,
+      project.billingModel,
+      project.contractAmount != null ? Number(project.contractAmount) : null,
+      Number(invoiced._sum.subtotal ?? 0),
+      milestones.map((milestone) => ({
+        amount: Number(milestone.amount),
+        status: milestone.status,
+      })),
       project.billRateOverride != null ? Number(project.billRateOverride) : null,
       timeEntries.map((entry) => ({
         projectId: entry.projectId,
@@ -484,6 +649,9 @@ export async function getProjectProfitabilityDetail(
         amount: Number(expense.amount),
         billable: expense.billable,
         billingStatus: expense.billingStatus,
+        categoryId: expense.categoryId,
+        categoryName: expense.category?.name ?? "Uncategorized",
+        categoryCode: expense.category?.code ?? null,
       })),
       profilesByUser,
       userNames,

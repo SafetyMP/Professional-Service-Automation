@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { FileText } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { listInvoices, invoicesToJournalCsv, getProjectBillingStatus } from "@/lib/billing/service";
+import { listInvoices, getProjectBillingStatus, exportInvoicesJournalCsv } from "@/lib/billing/service";
 import { listProjects } from "@/lib/projects/service";
+import { listReadyMilestones } from "@/lib/milestones/service";
+import { getChartOfAccounts } from "@/lib/settings/accounting";
 import { AppShell } from "@/components/layout/app-shell";
 import { InvoiceGenerateForm } from "@/components/billing/invoice-generate-form";
 import { Button } from "@/components/ui/button";
@@ -29,15 +31,20 @@ export default async function InvoicesPage({
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
   });
-  const [invoices, projects] = await Promise.all([
+  const [invoices, projects, accounts] = await Promise.all([
     listInvoices(session.user.organizationId),
     listProjects(session.user.organizationId),
+    getChartOfAccounts(session.user.organizationId),
   ]);
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
   const activeProjects = projects.filter((project) => project.status === "ACTIVE");
   const invoiceProjects = await Promise.all(
     activeProjects.map(async (project) => {
       const billing = await getProjectBillingStatus(session.user.organizationId, project.id);
+      const readyMilestones =
+        project.billingModel === "MILESTONE"
+          ? await listReadyMilestones(session.user.organizationId, project.id)
+          : [];
       return {
         id: project.id,
         name: project.name,
@@ -45,38 +52,72 @@ export default async function InvoicesPage({
         contractAmount: billing?.contractAmount ?? null,
         invoicedTotal: billing?.invoicedTotal ?? 0,
         remaining: billing?.remaining ?? null,
+        readyMilestones: readyMilestones.map((milestone) => ({
+          id: milestone.id,
+          name: milestone.name,
+          amount: Number(milestone.amount),
+        })),
       };
     }),
   );
   const exportableInvoices = invoices.filter((inv) => inv.status !== "DRAFT");
+  const journalPayload = exportableInvoices.map((inv) => ({
+    invoiceNumber: inv.invoiceNumber,
+    issueDate: inv.issueDate,
+    clientName: inv.project.client.name,
+    subtotal: inv.subtotal,
+    lines: inv.lines,
+  }));
   const journalCsv =
     exportableInvoices.length > 0
-      ? invoicesToJournalCsv(
-          exportableInvoices.map((inv) => ({
-            invoiceNumber: inv.invoiceNumber,
-            issueDate: inv.issueDate,
-            clientName: inv.project.client.name,
-            subtotal: inv.subtotal,
-            lines: inv.lines,
-          })),
-        )
+      ? exportInvoicesJournalCsv(journalPayload, "generic", accounts)
+      : null;
+  const xeroCsv =
+    exportableInvoices.length > 0
+      ? exportInvoicesJournalCsv(journalPayload, "xero", accounts)
+      : null;
+  const quickBooksCsv =
+    exportableInvoices.length > 0
+      ? exportInvoicesJournalCsv(journalPayload, "quickbooks", accounts)
       : null;
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Invoices"
         description="Generate draft invoices from WIP or contract billing."
         actions={
           isAdmin && journalCsv ? (
-            <a
-              href={`data:text/csv;charset=utf-8,${encodeURIComponent(journalCsv)}`}
-              download="invoices-journal.csv"
-            >
-              <Button type="button" variant="outline">
-                Export Journal CSV
-              </Button>
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`data:text/csv;charset=utf-8,${encodeURIComponent(journalCsv)}`}
+                download="invoices-journal.csv"
+              >
+                <Button type="button" variant="outline">
+                  Journal CSV
+                </Button>
+              </a>
+              {xeroCsv && (
+                <a
+                  href={`data:text/csv;charset=utf-8,${encodeURIComponent(xeroCsv)}`}
+                  download="invoices-xero.csv"
+                >
+                  <Button type="button" variant="outline">
+                    Xero CSV
+                  </Button>
+                </a>
+              )}
+              {quickBooksCsv && (
+                <a
+                  href={`data:text/csv;charset=utf-8,${encodeURIComponent(quickBooksCsv)}`}
+                  download="invoices-quickbooks.csv"
+                >
+                  <Button type="button" variant="outline">
+                    QuickBooks CSV
+                  </Button>
+                </a>
+              )}
+            </div>
           ) : undefined
         }
       />

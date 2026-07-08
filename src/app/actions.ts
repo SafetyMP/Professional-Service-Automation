@@ -10,6 +10,11 @@ import * as time from "@/lib/time/service";
 import * as resources from "@/lib/resources/service";
 import * as billing from "@/lib/billing/service";
 import * as expenses from "@/lib/expenses/service";
+import * as milestones from "@/lib/milestones/service";
+import * as accountingSettings from "@/lib/settings/accounting";
+import { deleteAccountingConnection } from "@/lib/accounting/connections";
+import { pushInvoiceToXero } from "@/lib/accounting/xero/push-invoice";
+import { pushInvoiceToQuickBooks } from "@/lib/accounting/quickbooks/push-invoice";
 
 export async function createClientAction(formData: FormData) {
   const user = await requireSession();
@@ -195,6 +200,15 @@ export async function generateInvoiceAction(formData: FormData) {
         amount: amountRaw ? Number(amountRaw) : undefined,
         percentComplete: percentRaw ? Number(percentRaw) : undefined,
       });
+    } else if (billingModel === "MILESTONE") {
+      const milestoneId = String(formData.get("milestoneId") || "");
+      if (!milestoneId) {
+        redirect(`/invoices?error=${encodeURIComponent("Select a milestone to invoice")}`);
+      }
+      invoice = await billing.generateDraftInvoice(user.organizationId, user.id, {
+        projectId,
+        milestoneId,
+      });
     } else {
       const startDateRaw = formData.get("startDate");
       const endDateRaw = formData.get("endDate");
@@ -228,13 +242,39 @@ export async function updateInvoiceStatusAction(id: string, status: "SENT" | "PA
 
 export async function createExpenseAction(formData: FormData) {
   const user = await requireSession();
-  await expenses.createExpenseEntry(user.organizationId, user.id, {
-    projectId: String(formData.get("projectId")),
-    expenseDate: new Date(String(formData.get("expenseDate"))),
-    amount: Number(formData.get("amount")),
-    description: String(formData.get("description") || "") || undefined,
-    billable: formData.get("billable") === "on",
-  });
+  const receipt = formData.get("receipt");
+  const categoryIdRaw = String(formData.get("categoryId") || "");
+
+  try {
+    await expenses.createExpenseEntry(user.organizationId, user.id, {
+      projectId: String(formData.get("projectId")),
+      expenseDate: new Date(String(formData.get("expenseDate"))),
+      amount: Number(formData.get("amount")),
+      description: String(formData.get("description") || "") || undefined,
+      billable: formData.get("billable") === "on",
+      categoryId: categoryIdRaw || undefined,
+      receipt: receipt instanceof File && receipt.size > 0 ? receipt : undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create expense";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/expenses");
+}
+
+export async function createExpenseCategoryAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await expenses.createExpenseCategory(user.organizationId, {
+      name: String(formData.get("name")),
+      code: String(formData.get("code") || "") || undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create category";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
   revalidatePath("/expenses");
 }
 
@@ -247,7 +287,25 @@ export async function submitExpenseAction(id: string) {
 export async function approveExpenseAction(id: string) {
   const user = await requireSession();
   requireRole(user, "MANAGER");
-  await expenses.approveExpenseEntry(user.organizationId, id, user.id);
+  try {
+    await expenses.approveExpenseEntry(user.organizationId, id, user.id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to approve expense";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath("/expenses");
+}
+
+export async function bulkApproveExpensesAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  const ids = formData.getAll("expenseIds").map(String);
+  try {
+    await expenses.approveExpenseEntries(user.organizationId, ids, user.id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to approve expenses";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
   revalidatePath("/expenses");
 }
 
@@ -256,4 +314,122 @@ export async function rejectExpenseAction(id: string) {
   requireRole(user, "MANAGER");
   await expenses.rejectExpenseEntry(user.organizationId, id, user.id);
   revalidatePath("/expenses");
+}
+
+export async function createMilestoneAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  const projectId = String(formData.get("projectId"));
+  try {
+    await milestones.createMilestone(user.organizationId, {
+      projectId,
+      name: String(formData.get("name")),
+      description: String(formData.get("description") || "") || undefined,
+      amount: Number(formData.get("amount")),
+      dueDate: formData.get("dueDate")
+        ? new Date(String(formData.get("dueDate")))
+        : undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function updateMilestoneStatusAction(
+  milestoneId: string,
+  projectId: string,
+  status: "PLANNED" | "READY",
+) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await milestones.updateMilestoneStatus(user.organizationId, milestoneId, status);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function deleteMilestoneAction(milestoneId: string, projectId: string) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await milestones.deleteMilestone(user.organizationId, milestoneId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function reorderMilestoneAction(
+  milestoneId: string,
+  projectId: string,
+  direction: "up" | "down",
+) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await milestones.reorderMilestone(user.organizationId, milestoneId, direction);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to reorder milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function updateAccountingSettingsAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  await accountingSettings.updateChartOfAccounts(user.organizationId, {
+    arAccountName: String(formData.get("arAccountName")),
+    serviceRevenueAccount: String(formData.get("serviceRevenueAccount")),
+    expenseRevenueAccount: String(formData.get("expenseRevenueAccount")),
+    arAccountCode: String(formData.get("arAccountCode") || "") || null,
+    serviceRevenueAccountCode: String(formData.get("serviceRevenueAccountCode") || "") || null,
+    expenseRevenueAccountCode: String(formData.get("expenseRevenueAccountCode") || "") || null,
+  });
+  revalidatePath("/settings/accounting");
+}
+
+export async function disconnectXeroAction() {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  await deleteAccountingConnection(user.organizationId, "XERO");
+  revalidatePath("/settings/accounting");
+}
+
+export async function disconnectQuickBooksAction() {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  await deleteAccountingConnection(user.organizationId, "QUICKBOOKS");
+  revalidatePath("/settings/accounting");
+}
+
+export async function pushInvoiceToXeroAction(invoiceId: string) {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  try {
+    await pushInvoiceToXero(user.organizationId, invoiceId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to push invoice to Xero";
+    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/invoices/${invoiceId}`);
+}
+
+export async function pushInvoiceToQuickBooksAction(invoiceId: string) {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  try {
+    await pushInvoiceToQuickBooks(user.organizationId, invoiceId);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to push invoice to QuickBooks";
+    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/invoices/${invoiceId}`);
 }

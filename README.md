@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/SafetyMP/Professional-Service-Automation)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-Open-source Professional Services Automation platform for consulting and professional services firms. Manage clients, projects, time, expenses, resources, utilization, billing, and profitability in one multi-tenant web app.
+Open-source Professional Services Automation platform for consulting and professional services firms. Manage clients, projects, time, expenses, resources, utilization, contract billing, milestones, and profitability — with optional Xero and QuickBooks journal push.
 
 <p align="center">
   <img src="docs/images/demo.gif" alt="PSA platform demo — dashboard, invoices, and profitability views" width="900" />
@@ -13,18 +13,19 @@ Open-source Professional Services Automation platform for consulting and profess
 ## Features
 
 - **Multi-tenant organizations** with role-based access (Admin, Manager, Consultant)
-- **Clients & projects** — tasks, team members, budgets, billing models (T&M, fixed fee, retainer)
-- **Time & expenses** — entry workflows with manager approval
+- **Clients & projects** — tasks, team members, budgets, billing models (T&M, fixed fee, retainer, milestone)
+- **Time & expenses** — approval workflows, categories, receipt uploads, bulk approval
 - **Resources** — profiles, allocations, utilization reporting
-- **Billing** — draft invoices from approved WIP or contract/progress billing; PDF export; journal CSV
-- **Reporting** — project profitability (billed vs unbilled), dashboard WIP metrics
+- **Billing** — WIP and contract/progress invoicing, milestone billing, PDF export, journal CSV
+- **Accounting** — chart of accounts, Xero / QuickBooks OAuth, push journals from invoices
+- **Reporting** — profitability with contract/milestone columns, expense breakdown by category
 - **Row-level security** — PostgreSQL RLS enforces organization isolation
 
 ## Screenshots
 
-| Dashboard | Invoices | Profitability |
-|-----------|----------|---------------|
-| ![Dashboard](docs/images/dashboard.png) | ![Invoices](docs/images/invoices.png) | ![Profitability](docs/images/profitability.png) |
+| Dashboard | Invoices | Profitability | Accounting |
+|-----------|----------|---------------|------------|
+| ![Dashboard](docs/images/dashboard.png) | ![Invoices](docs/images/invoices.png) | ![Profitability](docs/images/profitability.png) | ![Accounting](docs/images/accounting.png) |
 
 ## Stack
 
@@ -53,8 +54,8 @@ npm install
 npm run db:migrate
 npm run db:seed
 
-npm run dev
-# Default: http://localhost:3000 — use -p 3005 if port 3000 is taken
+npm run dev -- -p 3005
+# http://localhost:3005
 ```
 
 ### Demo login
@@ -63,6 +64,7 @@ npm run dev
 |-------|-------|
 | Organization | `demo-firm` |
 | Admin | `admin@demo.com` / `password123` |
+| Manager | `manager@demo.com` / `password123` |
 
 **Do not use demo credentials in production.** Change passwords and rotate `AUTH_SECRET` before deploying.
 
@@ -75,7 +77,10 @@ See [`.env.example`](.env.example):
 | `DATABASE_URL` | App database URL (RLS role `psa_app`) |
 | `DIRECT_URL` | Direct Postgres URL for migrations (`postgres` superuser) |
 | `AUTH_SECRET` | Session signing secret (required) |
-| `AUTH_URL` | Public app URL (e.g. `http://localhost:3000`) |
+| `AUTH_URL` | Public app URL (e.g. `http://localhost:3005`) |
+| `XERO_CLIENT_ID` / `XERO_CLIENT_SECRET` | Optional — Xero OAuth |
+| `QUICKBOOKS_CLIENT_ID` / `QUICKBOOKS_CLIENT_SECRET` | Optional — QuickBooks OAuth |
+| `QUICKBOOKS_ENV` | `sandbox` (default) or `production` |
 
 Local Docker Postgres listens on **port 5440** (mapped from container 5432).
 

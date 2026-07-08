@@ -407,6 +407,41 @@ export default async function ProjectDetailPage({
               </div>
             </div>
 
+            {profitability.expenseByCategory.length > 0 && (
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-semibold">Expenses by Category</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Category</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Billed</TableHead>
+                      <TableHead className="text-right">Unbilled</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {profitability.expenseByCategory.map((row) => (
+                      <TableRow key={row.categoryId ?? "uncategorized"}>
+                        <TableCell className="font-medium">
+                          {row.categoryName}
+                          {row.categoryCode ? ` (${row.categoryCode})` : ""}
+                        </TableCell>
+                        <TableCell className="tabular-nums text-right">
+                          ${formatCurrency(row.total)}
+                        </TableCell>
+                        <TableCell className="tabular-nums text-right">
+                          ${formatCurrency(row.billed)}
+                        </TableCell>
+                        <TableCell className="tabular-nums text-right">
+                          ${formatCurrency(row.unbilled)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
             {profitability.byPerson.length > 0 && (
               <Table>
                 <TableHeader>

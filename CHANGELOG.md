@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-08
+
+Phase 2 complete — demo-ready for professional services firms.
+
+### Added
+
+- **QuickBooks OAuth**: connect/disconnect in Settings → Accounting, push journal entries from invoice detail
+- Profitability report: billing model, contract/milestone totals, remaining balance columns
+- Org-wide expense breakdown by category on profitability report
+- Per-project expense breakdown by category on project profitability detail
+
+### Changed
+
+- Accounting settings: side-by-side Xero and QuickBooks integration cards
+- README, MVP scope, and screenshots updated for Phase 2 feature set
+
+## [0.4.1] - 2026-07-08
+
+### Fixed
+
+- Managers can access accounting settings; sidebar hides Accounting for consultants
+- Xero connect/disconnect remains admin-only
+
 ## [0.4.0] - 2026-07-08
 
 ### Added

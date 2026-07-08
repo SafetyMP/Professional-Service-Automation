@@ -23,9 +23,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { updateInvoiceStatusAction, pushInvoiceToXeroAction } from "@/app/actions";
+import { updateInvoiceStatusAction, pushInvoiceToXeroAction, pushInvoiceToQuickBooksAction } from "@/app/actions";
 import { getAccountingConnection } from "@/lib/accounting/connections";
 import { isXeroConfigured } from "@/lib/accounting/xero/config";
+import { isQuickBooksConfigured } from "@/lib/accounting/quickbooks/config";
 import { Alert } from "@/components/ui/alert";
 import { hasMinRole } from "@/lib/auth/rbac";
 
@@ -44,15 +45,18 @@ export default async function InvoiceDetailPage({
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
   });
-  const [invoice, accounts, xeroConnection] = await Promise.all([
+  const [invoice, accounts, xeroConnection, quickbooksConnection] = await Promise.all([
     getInvoice(session.user.organizationId, id),
     getChartOfAccounts(session.user.organizationId),
     getAccountingConnection(session.user.organizationId, "XERO"),
+    getAccountingConnection(session.user.organizationId, "QUICKBOOKS"),
   ]);
   if (!invoice) notFound();
 
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
   const canPushXero = isAdmin && Boolean(xeroConnection) && isXeroConfigured();
+  const canPushQuickBooks =
+    isAdmin && Boolean(quickbooksConnection) && isQuickBooksConfigured();
   const csv = invoiceToCsv(invoice);
   const journalPayload = {
     invoiceNumber: invoice.invoiceNumber,
@@ -85,6 +89,11 @@ export default async function InvoiceDetailPage({
       {invoice.xeroJournalId && (
         <Alert className="mb-6">
           Pushed to Xero (journal {invoice.xeroJournalId})
+        </Alert>
+      )}
+      {invoice.quickbooksJournalId && (
+        <Alert className="mb-6">
+          Pushed to QuickBooks (journal {invoice.quickbooksJournalId})
         </Alert>
       )}
 
@@ -184,6 +193,13 @@ export default async function InvoiceDetailPage({
         {canPushXero && !invoice.xeroJournalId && (
           <form action={pushInvoiceToXeroAction.bind(null, invoice.id)}>
             <Button type="submit">Push to Xero</Button>
+          </form>
+        )}
+        {canPushQuickBooks && !invoice.quickbooksJournalId && (
+          <form action={pushInvoiceToQuickBooksAction.bind(null, invoice.id)}>
+            <Button type="submit" variant="outline">
+              Push to QuickBooks
+            </Button>
           </form>
         )}
       </div>

@@ -71,6 +71,7 @@ enum AuditAction {
 
 enum AccountingProvider {
   XERO
+  QUICKBOOKS
 }
 
 model Organization {
@@ -289,6 +290,7 @@ model Invoice {
   dueDate        DateTime      @db.Date
   subtotal       Decimal       @default(0) @db.Decimal(12, 2)
   xeroJournalId  String?
+  quickbooksJournalId String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

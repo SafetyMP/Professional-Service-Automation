@@ -222,6 +222,34 @@ describe("computeProjectProfitability", () => {
     expect(row.billedRevenue).toBe(10_000);
     expect(row.unbilledRevenue).toBe(250);
     expect(row.revenue).toBe(10_250);
+    expect(row.contractRemaining).toBe(0);
+  });
+
+  it("exposes milestone totals and contract remaining on milestone projects", () => {
+    const report = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Product Launch",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "MILESTONE",
+          contractAmount: 30_000,
+          invoicedTotal: 10_000,
+          milestones: [
+            { amount: 10_000, status: "INVOICED" },
+            { amount: 15_000, status: "READY" },
+          ],
+        },
+      ],
+      [],
+      [],
+      profiles,
+    );
+
+    const row = report.projects[0];
+    expect(row.milestoneTotal).toBe(25_000);
+    expect(row.contractRemaining).toBe(5_000);
   });
 
   it("uses milestone totals for milestone project unbilled revenue", () => {
@@ -301,7 +329,7 @@ describe("computeProjectProfitabilityDetail", () => {
           billRateOverride: null,
         },
       ],
-      [{ projectId: "p1", userId: "u1", amount: 85.42, billable: true, billingStatus: "INVOICED" }],
+      [{ projectId: "p1", userId: "u1", amount: 85.42, billable: true, billingStatus: "INVOICED", categoryId: "c1", categoryName: "Travel", categoryCode: "TRAVEL" }],
       profiles,
       userNames,
     );
@@ -334,7 +362,7 @@ describe("computeProjectProfitabilityDetail", () => {
           billRateOverride: null,
         },
       ],
-      [{ projectId: "p1", userId: "u1", amount: 100, billable: true, billingStatus: "UNBILLED" }],
+      [{ projectId: "p1", userId: "u1", amount: 100, billable: true, billingStatus: "UNBILLED", categoryId: null, categoryName: "Uncategorized", categoryCode: null }],
       profiles,
       userNames,
     );

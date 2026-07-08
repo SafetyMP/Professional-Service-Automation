@@ -14,6 +14,7 @@ import * as milestones from "@/lib/milestones/service";
 import * as accountingSettings from "@/lib/settings/accounting";
 import { deleteAccountingConnection } from "@/lib/accounting/connections";
 import { pushInvoiceToXero } from "@/lib/accounting/xero/push-invoice";
+import { pushInvoiceToQuickBooks } from "@/lib/accounting/quickbooks/push-invoice";
 
 export async function createClientAction(formData: FormData) {
   const user = await requireSession();
@@ -401,6 +402,13 @@ export async function disconnectXeroAction() {
   revalidatePath("/settings/accounting");
 }
 
+export async function disconnectQuickBooksAction() {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  await deleteAccountingConnection(user.organizationId, "QUICKBOOKS");
+  revalidatePath("/settings/accounting");
+}
+
 export async function pushInvoiceToXeroAction(invoiceId: string) {
   const user = await requireSession();
   requireRole(user, "ADMIN");
@@ -408,6 +416,19 @@ export async function pushInvoiceToXeroAction(invoiceId: string) {
     await pushInvoiceToXero(user.organizationId, invoiceId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to push invoice to Xero";
+    redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/invoices/${invoiceId}`);
+}
+
+export async function pushInvoiceToQuickBooksAction(invoiceId: string) {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  try {
+    await pushInvoiceToQuickBooks(user.organizationId, invoiceId);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to push invoice to QuickBooks";
     redirect(`/invoices/${invoiceId}?error=${encodeURIComponent(message)}`);
   }
   revalidatePath(`/invoices/${invoiceId}`);

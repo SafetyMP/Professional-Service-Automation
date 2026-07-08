@@ -25,7 +25,7 @@ const pages = [
 ];
 
 /** Frame duration in milliseconds (gifenc stores delay/10 as GIF centiseconds). */
-const GIF_FRAME_DELAY_MS = 10_000;
+const GIF_FRAME_DELAY_MS = 5_000;
 
 function launchOptions() {
   if (process.env.CI) {

@@ -6,7 +6,8 @@ DECLARE
   tbl TEXT;
   tables TEXT[] := ARRAY[
     'Client', 'Project', 'Task', 'ProjectMember', 'ResourceProfile',
-    'Allocation', 'TimeEntry', 'Invoice', 'InvoiceLine', 'ExpenseEntry', 'AuditLog'
+    'Allocation', 'TimeEntry', 'Invoice', 'InvoiceLine', 'ExpenseEntry', 'AuditLog',
+    'Milestone'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tables LOOP

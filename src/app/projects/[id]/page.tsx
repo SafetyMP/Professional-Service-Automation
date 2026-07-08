@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { getProject, listOrgUsers } from "@/lib/projects/service";
 import { getProjectBillingStatus } from "@/lib/billing/service";
+import { listProjectMilestones } from "@/lib/milestones/service";
 import { getProjectProfitabilityDetail } from "@/lib/reporting/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { Alert } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -21,8 +23,11 @@ import {
 } from "@/components/ui/table";
 import {
   addProjectMemberAction,
+  createMilestoneAction,
   createTaskAction,
+  deleteMilestoneAction,
   toggleTaskAction,
+  updateMilestoneStatusAction,
   updateProjectAction,
 } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
@@ -30,10 +35,13 @@ import { formatBillingModel, formatCurrency, formatPercent } from "@/lib/utils/f
 
 export default async function ProjectDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -45,6 +53,10 @@ export default async function ProjectDetailPage({
 
   const profitability = await getProjectProfitabilityDetail(session.user.organizationId, id);
   const billingStatus = await getProjectBillingStatus(session.user.organizationId, id);
+  const projectMilestones =
+    project.billingModel === "MILESTONE"
+      ? await listProjectMilestones(session.user.organizationId, id)
+      : [];
   const orgUsers = await listOrgUsers(session.user.organizationId);
   const canManage = hasMinRole(session.user.role, "MANAGER");
   const memberIds = new Set(project.members.map((m) => m.userId));
@@ -60,6 +72,8 @@ export default async function ProjectDetailPage({
           </Badge>
         }
       />
+
+      {error && <Alert variant="destructive" className="mb-6">{error}</Alert>}
 
       {canManage && (
         <Card className="mb-6">
@@ -149,6 +163,124 @@ export default async function ProjectDetailPage({
           </div>
         )}
 
+      {project.billingModel === "MILESTONE" && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Milestones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {canManage && (
+              <form action={createMilestoneAction} className="mb-4 grid gap-3 sm:grid-cols-4">
+                <input type="hidden" name="projectId" value={project.id} />
+                <div>
+                  <Label htmlFor="milestoneName">Name</Label>
+                  <Input id="milestoneName" name="name" required placeholder="Phase 1 delivery" />
+                </div>
+                <div>
+                  <Label htmlFor="milestoneAmount">Amount</Label>
+                  <Input id="milestoneAmount" name="amount" type="number" step="0.01" min="0.01" required />
+                </div>
+                <div>
+                  <Label htmlFor="milestoneDue">Due Date</Label>
+                  <Input id="milestoneDue" name="dueDate" type="date" />
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit">Add Milestone</Button>
+                </div>
+              </form>
+            )}
+            {projectMilestones.length === 0 ? (
+              <p className="text-sm text-[var(--color-muted-foreground)]">
+                No milestones yet. Add milestones, mark them Ready, then invoice from the Invoices page.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Due</TableHead>
+                    {canManage && <TableHead className="text-right">Actions</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projectMilestones.map((milestone) => (
+                    <TableRow key={milestone.id}>
+                      <TableCell className="font-medium">{milestone.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            milestone.status === "INVOICED"
+                              ? "success"
+                              : milestone.status === "READY"
+                                ? "default"
+                                : "warning"
+                          }
+                        >
+                          {milestone.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="tabular-nums text-right">
+                        ${formatCurrency(Number(milestone.amount))}
+                      </TableCell>
+                      <TableCell>
+                        {milestone.dueDate
+                          ? milestone.dueDate.toISOString().slice(0, 10)
+                          : "—"}
+                      </TableCell>
+                      {canManage && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {milestone.status === "PLANNED" && (
+                              <>
+                                <form
+                                  action={updateMilestoneStatusAction.bind(
+                                    null,
+                                    milestone.id,
+                                    project.id,
+                                    "READY",
+                                  )}
+                                >
+                                  <Button type="submit" size="sm" variant="outline">
+                                    Mark Ready
+                                  </Button>
+                                </form>
+                                <form
+                                  action={deleteMilestoneAction.bind(null, milestone.id, project.id)}
+                                >
+                                  <Button type="submit" size="sm" variant="ghost">
+                                    Delete
+                                  </Button>
+                                </form>
+                              </>
+                            )}
+                            {milestone.status === "READY" && (
+                              <form
+                                action={updateMilestoneStatusAction.bind(
+                                  null,
+                                  milestone.id,
+                                  project.id,
+                                  "PLANNED",
+                                )}
+                              >
+                                <Button type="submit" size="sm" variant="ghost">
+                                  Revert
+                                </Button>
+                              </form>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {profitability && (
         <Card className="mb-6">
           <CardHeader>
@@ -182,7 +314,13 @@ export default async function ProjectDetailPage({
 
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <div className="rounded-md border border-[var(--color-border)] p-3 text-sm">
-                <p className="font-medium">Time revenue</p>
+                <p className="font-medium">
+                  {project.billingModel === "FIXED_FEE" ||
+                  project.billingModel === "RETAINER" ||
+                  project.billingModel === "MILESTONE"
+                    ? "Contract revenue"
+                    : "Time revenue"}
+                </p>
                 <p className="text-[var(--color-muted-foreground)]">
                   Billed ${formatCurrency(profitability.timeRevenue.billed)} · Unbilled $
                   {formatCurrency(profitability.timeRevenue.unbilled)}

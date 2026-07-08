@@ -3,7 +3,12 @@ import { redirect, notFound } from "next/navigation";
 import { Download, Eye } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
-import { getInvoice, invoiceToCsv, invoiceToJournalCsv } from "@/lib/billing/service";
+import {
+  getInvoice,
+  invoiceToCsv,
+  exportInvoiceJournalCsv,
+} from "@/lib/billing/service";
+import { getChartOfAccounts } from "@/lib/settings/accounting";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,18 +38,24 @@ export default async function InvoiceDetailPage({
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
   });
-  const invoice = await getInvoice(session.user.organizationId, id);
+  const [invoice, accounts] = await Promise.all([
+    getInvoice(session.user.organizationId, id),
+    getChartOfAccounts(session.user.organizationId),
+  ]);
   if (!invoice) notFound();
 
   const isAdmin = hasMinRole(session.user.role, "ADMIN");
   const csv = invoiceToCsv(invoice);
-  const journalCsv = invoiceToJournalCsv({
+  const journalPayload = {
     invoiceNumber: invoice.invoiceNumber,
     issueDate: invoice.issueDate,
     clientName: invoice.project.client.name,
     subtotal: invoice.subtotal,
     lines: invoice.lines,
-  });
+  };
+  const journalCsv = exportInvoiceJournalCsv(journalPayload, "generic", accounts);
+  const xeroCsv = exportInvoiceJournalCsv(journalPayload, "xero", accounts);
+  const quickBooksCsv = exportInvoiceJournalCsv(journalPayload, "quickbooks", accounts);
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
@@ -136,7 +147,23 @@ export default async function InvoiceDetailPage({
           download={`${invoice.invoiceNumber}-journal.csv`}
         >
           <Button type="button" variant="outline">
-            Export Journal CSV
+            Journal CSV
+          </Button>
+        </a>
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(xeroCsv)}`}
+          download={`${invoice.invoiceNumber}-xero.csv`}
+        >
+          <Button type="button" variant="outline">
+            Xero CSV
+          </Button>
+        </a>
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(quickBooksCsv)}`}
+          download={`${invoice.invoiceNumber}-quickbooks.csv`}
+        >
+          <Button type="button" variant="outline">
+            QuickBooks CSV
           </Button>
         </a>
       </div>

@@ -10,6 +10,8 @@ import * as time from "@/lib/time/service";
 import * as resources from "@/lib/resources/service";
 import * as billing from "@/lib/billing/service";
 import * as expenses from "@/lib/expenses/service";
+import * as milestones from "@/lib/milestones/service";
+import * as accountingSettings from "@/lib/settings/accounting";
 
 export async function createClientAction(formData: FormData) {
   const user = await requireSession();
@@ -195,6 +197,15 @@ export async function generateInvoiceAction(formData: FormData) {
         amount: amountRaw ? Number(amountRaw) : undefined,
         percentComplete: percentRaw ? Number(percentRaw) : undefined,
       });
+    } else if (billingModel === "MILESTONE") {
+      const milestoneId = String(formData.get("milestoneId") || "");
+      if (!milestoneId) {
+        redirect(`/invoices?error=${encodeURIComponent("Select a milestone to invoice")}`);
+      }
+      invoice = await billing.generateDraftInvoice(user.organizationId, user.id, {
+        projectId,
+        milestoneId,
+      });
     } else {
       const startDateRaw = formData.get("startDate");
       const endDateRaw = formData.get("endDate");
@@ -256,4 +267,64 @@ export async function rejectExpenseAction(id: string) {
   requireRole(user, "MANAGER");
   await expenses.rejectExpenseEntry(user.organizationId, id, user.id);
   revalidatePath("/expenses");
+}
+
+export async function createMilestoneAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  const projectId = String(formData.get("projectId"));
+  try {
+    await milestones.createMilestone(user.organizationId, {
+      projectId,
+      name: String(formData.get("name")),
+      description: String(formData.get("description") || "") || undefined,
+      amount: Number(formData.get("amount")),
+      dueDate: formData.get("dueDate")
+        ? new Date(String(formData.get("dueDate")))
+        : undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function updateMilestoneStatusAction(
+  milestoneId: string,
+  projectId: string,
+  status: "PLANNED" | "READY",
+) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await milestones.updateMilestoneStatus(user.organizationId, milestoneId, status);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function deleteMilestoneAction(milestoneId: string, projectId: string) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await milestones.deleteMilestone(user.organizationId, milestoneId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete milestone";
+    redirect(`/projects/${projectId}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function updateAccountingSettingsAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  await accountingSettings.updateChartOfAccounts(user.organizationId, {
+    arAccountName: String(formData.get("arAccountName")),
+    serviceRevenueAccount: String(formData.get("serviceRevenueAccount")),
+    expenseRevenueAccount: String(formData.get("expenseRevenueAccount")),
+  });
+  revalidatePath("/settings/accounting");
 }

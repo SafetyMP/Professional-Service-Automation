@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-07
+
+### Added
+
+- Contract-aware profitability: fixed-fee and retainer projects use invoice totals and remaining contract balance for revenue instead of hours × rate
+- **Milestone billing**: `Milestone` model with PLANNED → READY → INVOICED workflow, project milestone UI, and milestone-based invoice generation
+- **Accounting export v2**: configurable chart of accounts (Settings → Accounting), Xero manual journal CSV, and QuickBooks Online journal CSV formats
+
+### Changed
+
+- Profitability rules spec updated for contract vs T&M vs milestone revenue recognition
+- Project detail shows "Contract revenue" label for fixed-fee, retainer, and milestone profitability breakdown
+- Journal CSV exports use organization account names from settings
+
 ## [0.1.5] - 2026-07-07
 
 ### Added

@@ -15,6 +15,7 @@ async function main() {
   await prisma.auditLog.deleteMany();
   await prisma.invoiceLine.deleteMany();
   await prisma.invoice.deleteMany();
+  await prisma.milestone.deleteMany();
   await prisma.timeEntry.deleteMany();
   await prisma.expenseEntry.deleteMany();
   await prisma.allocation.deleteMany();
@@ -79,6 +80,7 @@ async function main() {
     { name: "Cloud Migration", client: clients[1], budget: 320, billingModel: "TIME_AND_MATERIALS" as const },
     { name: "Security Audit", client: clients[1], budget: 160, billingModel: "RETAINER" as const, contractAmount: 12000 },
     { name: "Process Optimization", client: clients[2], budget: 240, billingModel: "TIME_AND_MATERIALS" as const },
+    { name: "Mobile App Build", client: clients[2], budget: 280, billingModel: "MILESTONE" as const, contractAmount: 75000 },
   ];
 
   const projects = await Promise.all(
@@ -109,6 +111,38 @@ async function main() {
         { organizationId: org.id, projectId: project.id, name: "Discovery" },
         { organizationId: org.id, projectId: project.id, name: "Implementation" },
         { organizationId: org.id, projectId: project.id, name: "Testing" },
+      ],
+    });
+  }
+
+  const milestoneProject = projects.find((project) => project.name === "Mobile App Build");
+  if (milestoneProject) {
+    await prisma.milestone.createMany({
+      data: [
+        {
+          organizationId: org.id,
+          projectId: milestoneProject.id,
+          name: "Discovery & Design",
+          amount: 15000,
+          status: "INVOICED",
+          sortOrder: 0,
+        },
+        {
+          organizationId: org.id,
+          projectId: milestoneProject.id,
+          name: "MVP Build",
+          amount: 35000,
+          status: "READY",
+          sortOrder: 1,
+        },
+        {
+          organizationId: org.id,
+          projectId: milestoneProject.id,
+          name: "Launch & Handoff",
+          amount: 25000,
+          status: "PLANNED",
+          sortOrder: 2,
+        },
       ],
     });
   }
@@ -230,6 +264,67 @@ async function main() {
     });
 
     console.log(`Created draft invoice ${invoice.invoiceNumber}`);
+  }
+
+  const erpProject = projects.find((project) => project.name === "ERP Integration");
+  if (erpProject) {
+    await prisma.invoice.create({
+      data: {
+        organizationId: org.id,
+        projectId: erpProject.id,
+        clientId: erpProject.clientId,
+        invoiceNumber: "INV-00002",
+        status: "SENT",
+        issueDate: subDays(new Date(), 10),
+        dueDate: subDays(new Date(), -20),
+        subtotal: 24000,
+        lines: {
+          create: [
+            {
+              organizationId: org.id,
+              description: "Fixed fee — ERP Integration (50% complete)",
+              quantity: 1,
+              unitRate: 24000,
+              amount: 24000,
+            },
+          ],
+        },
+      },
+    });
+    console.log("Created fixed-fee progress invoice INV-00002 for ERP Integration");
+  }
+
+  if (milestoneProject) {
+    const discoveryMilestone = await prisma.milestone.findFirst({
+      where: { organizationId: org.id, projectId: milestoneProject.id, name: "Discovery & Design" },
+    });
+    if (discoveryMilestone) {
+      await prisma.invoice.create({
+        data: {
+          organizationId: org.id,
+          projectId: milestoneProject.id,
+          clientId: milestoneProject.clientId,
+          invoiceNumber: "INV-00003",
+          status: "SENT",
+          issueDate: subDays(new Date(), 7),
+          dueDate: subDays(new Date(), -23),
+          subtotal: 15000,
+          lines: {
+            create: [
+              {
+                organizationId: org.id,
+                milestoneId: discoveryMilestone.id,
+                description: `Milestone — Discovery & Design (${milestoneProject.name})`,
+                quantity: 1,
+                unitRate: 15000,
+                amount: 15000,
+              },
+            ],
+          },
+        },
+      });
+      console.log("Created milestone invoice INV-00003 for Discovery & Design");
+    }
   }
 
   console.log("Demo seed complete.");

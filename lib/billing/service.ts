@@ -8,6 +8,27 @@ import {
   resolveContractInvoiceAmount,
   roundCurrency,
 } from "@/lib/billing/contract-billing";
+import {
+  assertMilestoneInvoiceable,
+  milestoneLineDescription,
+} from "@/lib/billing/milestone-billing";
+import {
+  exportInvoiceJournalCsv,
+  exportInvoicesJournalCsv,
+  invoiceToJournalCsv,
+  invoicesToJournalCsv,
+  type AccountingExportFormat,
+  type JournalInvoice,
+} from "@/lib/billing/accounting-export";
+
+export {
+  exportInvoiceJournalCsv,
+  exportInvoicesJournalCsv,
+  invoiceToJournalCsv,
+  invoicesToJournalCsv,
+  type AccountingExportFormat,
+  type JournalInvoice,
+};
 
 const DEFAULT_BILL_RATE = 150;
 
@@ -103,6 +124,7 @@ export async function getProjectBillingStatus(organizationId: string, projectId:
 type InvoiceLineInput = {
   timeEntryId?: string;
   expenseEntryId?: string;
+  milestoneId?: string;
   description: string;
   quantity: Decimal;
   unitRate: Decimal;
@@ -145,6 +167,7 @@ async function createDraftInvoiceRecord(
           organizationId: params.organizationId,
           timeEntryId: line.timeEntryId,
           expenseEntryId: line.expenseEntryId,
+          milestoneId: line.milestoneId,
           description: line.description,
           quantity: line.quantity,
           unitRate: line.unitRate,
@@ -197,6 +220,10 @@ export async function generateDraftInvoice(
         amount?: number;
         percentComplete?: number;
         description?: string;
+      }
+    | {
+        projectId: string;
+        milestoneId: string;
       },
 ) {
   const project = await withOrgContext(organizationId, async (tx) =>
@@ -214,6 +241,16 @@ export async function generateDraftInvoice(
       amount: "amount" in params ? params.amount : undefined,
       percentComplete: "percentComplete" in params ? params.percentComplete : undefined,
       description: "description" in params ? params.description : undefined,
+    });
+  }
+
+  if (project.billingModel === "MILESTONE") {
+    if (!("milestoneId" in params) || !params.milestoneId) {
+      throw new Error("Select a milestone to invoice");
+    }
+    return generateMilestoneDraftInvoice(organizationId, userId, {
+      projectId: params.projectId,
+      milestoneId: params.milestoneId,
     });
   }
 
@@ -291,6 +328,59 @@ export async function generateContractDraftInvoice(
         percentComplete: String(params.percentComplete ?? 0),
       },
     });
+  });
+}
+
+export async function generateMilestoneDraftInvoice(
+  organizationId: string,
+  userId: string,
+  params: { projectId: string; milestoneId: string },
+) {
+  return withOrgContext(organizationId, async (tx) => {
+    const project = await tx.project.findFirst({
+      where: { id: params.projectId, organizationId },
+      include: { client: true },
+    });
+    if (!project) throw new Error("Project not found");
+    if (project.billingModel !== "MILESTONE") {
+      throw new Error("Project is not configured for milestone billing");
+    }
+
+    const milestone = await tx.milestone.findFirst({
+      where: { id: params.milestoneId, organizationId, projectId: project.id },
+    });
+    if (!milestone) throw new Error("Milestone not found");
+    assertMilestoneInvoiceable(milestone.status);
+
+    const amount = Number(milestone.amount);
+    const description = milestoneLineDescription(milestone.name, project.name);
+
+    const invoice = await createDraftInvoiceRecord(tx, {
+      organizationId,
+      userId,
+      project: { id: project.id, clientId: project.clientId, name: project.name },
+      lines: [
+        {
+          milestoneId: milestone.id,
+          description,
+          quantity: new Decimal(1),
+          unitRate: new Decimal(amount),
+          amount: new Decimal(amount),
+        },
+      ],
+      metadata: {
+        billingModel: "MILESTONE",
+        milestoneId: milestone.id,
+        milestoneName: milestone.name,
+      },
+    });
+
+    await tx.milestone.update({
+      where: { id: milestone.id },
+      data: { status: "INVOICED" },
+    });
+
+    return invoice;
   });
 }
 
@@ -441,80 +531,4 @@ export function invoiceToCsv(invoice: {
       `${invoice.invoiceNumber},${invoice.issueDate.toISOString().slice(0, 10)},${invoice.dueDate.toISOString().slice(0, 10)},${invoice.status},"${l.description.replace(/"/g, '""')}",${l.quantity},${l.unitRate},${l.amount}`,
   );
   return [header, ...rows, `,,,,Subtotal,,,${invoice.subtotal}`].join("\n");
-}
-
-export type JournalInvoice = {
-  invoiceNumber: string;
-  issueDate: Date;
-  clientName: string;
-  subtotal: { toString(): string };
-  lines: Array<{
-    amount: { toString(): string };
-    timeEntryId?: string | null;
-    expenseEntryId?: string | null;
-  }>;
-};
-
-function formatJournalAmount(value: number): string {
-  return value.toFixed(2);
-}
-
-function escapeJournalField(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
-function splitInvoiceRevenue(lines: JournalInvoice["lines"]): {
-  timeRevenue: number;
-  expenseRevenue: number;
-} {
-  let timeRevenue = 0;
-  let expenseRevenue = 0;
-
-  for (const line of lines) {
-    const amount = Number(line.amount.toString());
-    if (line.expenseEntryId) {
-      expenseRevenue += amount;
-    } else {
-      timeRevenue += amount;
-    }
-  }
-
-  return { timeRevenue, expenseRevenue };
-}
-
-export function invoiceToJournalRows(invoice: JournalInvoice): string[] {
-  const date = invoice.issueDate.toISOString().slice(0, 10);
-  const reference = invoice.invoiceNumber;
-  const subtotal = Number(invoice.subtotal.toString());
-  const { timeRevenue, expenseRevenue } = splitInvoiceRevenue(invoice.lines);
-  const clientLabel = escapeJournalField(`${reference} ${invoice.clientName}`);
-
-  const rows = [
-    `${date},Accounts Receivable,${clientLabel},${formatJournalAmount(subtotal)},,${reference}`,
-  ];
-
-  if (timeRevenue > 0) {
-    rows.push(
-      `${date},Service Revenue,${escapeJournalField(`${reference} professional services`)},,${formatJournalAmount(timeRevenue)},${reference}`,
-    );
-  }
-
-  if (expenseRevenue > 0) {
-    rows.push(
-      `${date},Expense Revenue,${escapeJournalField(`${reference} reimbursable expenses`)},,${formatJournalAmount(expenseRevenue)},${reference}`,
-    );
-  }
-
-  return rows;
-}
-
-export function invoiceToJournalCsv(invoice: JournalInvoice): string {
-  const header = "Date,Account,Description,Debit,Credit,Reference";
-  return [header, ...invoiceToJournalRows(invoice)].join("\n");
-}
-
-export function invoicesToJournalCsv(invoices: JournalInvoice[]): string {
-  const header = "Date,Account,Description,Debit,Credit,Reference";
-  const rows = invoices.flatMap((invoice) => invoiceToJournalRows(invoice));
-  return [header, ...rows].join("\n");
 }

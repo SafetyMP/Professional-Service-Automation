@@ -29,7 +29,12 @@
 
 ### Milestone
 
-- Treated as Time & Materials until milestone UI is added
+- Project `billingModel = MILESTONE`
+- Milestones belong to the project with `name`, `amount`, optional `dueDate`
+- Status workflow: `PLANNED` → `READY` → `INVOICED`
+- Only `READY` milestones can be invoiced
+- Invoice creates one line linked to the milestone; milestone status becomes `INVOICED`
+- Does not mark time/expense entries as invoiced
 
 ## Rate precedence (time only, highest wins)
 
@@ -49,4 +54,4 @@ Each transition writes an audit log entry.
 
 ## Accounting export
 
-See `specs/domain/accounting-export.md` — journal CSV with AR debit and revenue credits (time vs expense).
+See `specs/domain/accounting-export.md` — journal CSV with configurable chart of accounts and Xero / QuickBooks formats.

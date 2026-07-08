@@ -7,6 +7,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   Receipt,
+  Settings,
   Users,
   UserCog,
 } from "lucide-react";
@@ -29,6 +30,7 @@ export const navItems: NavItem[] = [
   { href: "/resources/utilization", label: "Utilization", icon: UserCog },
   { href: "/reports/profitability", label: "Profitability", icon: BarChart3 },
   { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/settings/accounting", label: "Accounting", icon: Settings },
 ];
 
 export function isNavActive(pathname: string, href: string, exact?: boolean): boolean {

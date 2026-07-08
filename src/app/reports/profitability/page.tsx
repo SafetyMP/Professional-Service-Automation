@@ -40,7 +40,7 @@ export default async function ProfitabilityPage() {
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
       <PageHeader
         title="Project Profitability"
-        description="Revenue from approved billable time and expenses. Billed revenue is on invoices; unbilled is approved work not yet invoiced."
+        description="Revenue from approved billable work and invoices. T&M projects use hours × rate; fixed-fee and retainer projects use invoice totals and remaining contract balance."
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

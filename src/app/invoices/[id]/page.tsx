@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { Download, Eye } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { getInvoice, invoiceToCsv, invoiceToJournalCsv } from "@/lib/billing/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFoot,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { updateInvoiceStatusAction } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
 
@@ -37,60 +48,68 @@ export default async function InvoiceDetailPage({
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
-          <p className="text-[var(--color-muted-foreground)]">
-            {invoice.project.name} — {invoice.project.client.name}
-          </p>
-        </div>
-        <Badge variant={invoice.status === "PAID" ? "success" : "default"}>
-          {invoice.status}
-        </Badge>
-      </div>
+      <PageHeader
+        title={invoice.invoiceNumber}
+        description={`${invoice.project.name} — ${invoice.project.client.name}`}
+        actions={
+          <Badge
+            variant={
+              invoice.status === "PAID" ? "success" : invoice.status === "DRAFT" ? "warning" : "default"
+            }
+          >
+            {invoice.status}
+          </Badge>
+        }
+      />
 
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Line Items</CardTitle>
         </CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-2">Description</th>
-                <th className="pb-2">Qty</th>
-                <th className="pb-2">Rate</th>
-                <th className="pb-2">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Description</TableHead>
+                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">Rate</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {invoice.lines.map((l) => (
-                <tr key={l.id} className="border-b">
-                  <td className="py-2">{l.description}</td>
-                  <td className="py-2">{l.quantity.toString()}</td>
-                  <td className="py-2">${l.unitRate.toString()}</td>
-                  <td className="py-2">${l.amount.toString()}</td>
-                </tr>
+                <TableRow key={l.id}>
+                  <TableCell className="font-medium">{l.description}</TableCell>
+                  <TableCell className="tabular-nums text-right">{l.quantity.toString()}</TableCell>
+                  <TableCell className="tabular-nums text-right">${l.unitRate.toString()}</TableCell>
+                  <TableCell className="tabular-nums text-right">${l.amount.toString()}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={3} className="pt-4 text-right font-semibold">
+            </TableBody>
+            <TableFoot>
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={3} className="text-right font-semibold">
                   Subtotal
-                </td>
-                <td className="pt-4 font-semibold">${invoice.subtotal.toString()}</td>
-              </tr>
-            </tfoot>
-          </table>
+                </TableCell>
+                <TableCell className="tabular-nums text-right text-base font-semibold">
+                  ${invoice.subtotal.toString()}
+                </TableCell>
+              </TableRow>
+            </TableFoot>
+          </Table>
         </CardContent>
       </Card>
 
       <div className="flex flex-wrap gap-3">
         <a href={`/api/invoices/${invoice.id}/pdf`}>
-          <Button type="button">Download PDF</Button>
+          <Button type="button">
+            <Download className="h-4 w-4" />
+            Download PDF
+          </Button>
         </a>
         <Link href={`/invoices/${invoice.id}/print`}>
-          <Button type="button" variant="secondary">
+          <Button type="button" variant="outline">
+            <Eye className="h-4 w-4" />
             Preview Invoice
           </Button>
         </Link>
@@ -108,7 +127,7 @@ export default async function InvoiceDetailPage({
           href={`data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`}
           download={`${invoice.invoiceNumber}.csv`}
         >
-          <Button type="button" variant="secondary">
+          <Button type="button" variant="outline">
             Export Lines CSV
           </Button>
         </a>
@@ -116,7 +135,7 @@ export default async function InvoiceDetailPage({
           href={`data:text/csv;charset=utf-8,${encodeURIComponent(journalCsv)}`}
           download={`${invoice.invoiceNumber}-journal.csv`}
         >
-          <Button type="button" variant="secondary">
+          <Button type="button" variant="outline">
             Export Journal CSV
           </Button>
         </a>

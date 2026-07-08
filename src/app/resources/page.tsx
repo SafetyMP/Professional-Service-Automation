@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Users } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -8,8 +9,18 @@ import {
 import { listProjects, listOrgUsers } from "@/lib/projects/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Input, Select, FormField } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { createAllocationAction, upsertResourceProfileAction } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
 
@@ -32,7 +43,10 @@ export default async function ResourcesPage() {
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <h1 className="mb-6 text-2xl font-bold">Resources</h1>
+      <PageHeader
+        title="Resources"
+        description="Manage capacity profiles, rates, and project allocations."
+      />
 
       {isAdmin && (
         <Card className="mb-6">
@@ -40,9 +54,8 @@ export default async function ResourcesPage() {
             <CardTitle>Resource Profile</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={upsertResourceProfileAction} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <div>
-                <Label htmlFor="userId">Person</Label>
+            <form action={upsertResourceProfileAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <FormField label="Person" htmlFor="userId">
                 <Select id="userId" name="userId" required>
                   {orgUsers.map((u) => (
                     <option key={u.userId} value={u.userId}>
@@ -50,24 +63,22 @@ export default async function ResourcesPage() {
                     </option>
                   ))}
                 </Select>
-              </div>
-              <div>
-                <Label htmlFor="weeklyCapacityHrs">Capacity (hrs/wk)</Label>
+              </FormField>
+              <FormField label="Capacity (hrs/wk)" htmlFor="weeklyCapacityHrs">
                 <Input id="weeklyCapacityHrs" name="weeklyCapacityHrs" type="number" defaultValue="40" />
-              </div>
-              <div>
-                <Label htmlFor="costRate">Cost Rate</Label>
+              </FormField>
+              <FormField label="Cost Rate" htmlFor="costRate">
                 <Input id="costRate" name="costRate" type="number" step="0.01" defaultValue="75" />
-              </div>
-              <div>
-                <Label htmlFor="billRate">Bill Rate</Label>
+              </FormField>
+              <FormField label="Bill Rate" htmlFor="billRate">
                 <Input id="billRate" name="billRate" type="number" step="0.01" defaultValue="150" />
-              </div>
-              <div>
-                <Label htmlFor="skills">Skills (comma-sep)</Label>
+              </FormField>
+              <FormField label="Skills (comma-sep)" htmlFor="skills">
                 <Input id="skills" name="skills" placeholder="React, PM" />
+              </FormField>
+              <div className="lg:col-span-5">
+                <Button type="submit">Save Profile</Button>
               </div>
-              <Button type="submit">Save Profile</Button>
             </form>
           </CardContent>
         </Card>
@@ -78,33 +89,42 @@ export default async function ResourcesPage() {
           <CardTitle>Capacity Profiles</CardTitle>
         </CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-2">Name</th>
-                <th className="pb-2">Capacity</th>
-                <th className="pb-2">Cost</th>
-                <th className="pb-2">Bill</th>
-                <th className="pb-2">Skills</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profiles.map((p) => (
-                <tr key={p.id} className="border-b">
-                  <td className="py-2">{p.user.name}</td>
-                  <td className="py-2">{p.weeklyCapacityHrs.toString()}h</td>
-                  <td className="py-2">${p.costRate.toString()}</td>
-                  <td className="py-2">${p.billRate.toString()}</td>
-                  <td className="py-2">{p.skills.join(", ") || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {profiles.length === 0 && (
-            <p className="text-sm text-[var(--color-muted-foreground)]">
-              No profiles yet. Admins can create profiles for:{" "}
-              {orgUsers.filter((u) => !profileUserIds.has(u.userId)).map((u) => u.user.name).join(", ")}
-            </p>
+          {profiles.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No profiles yet"
+              description={`Admins can create profiles for: ${orgUsers
+                .filter((u) => !profileUserIds.has(u.userId))
+                .map((u) => u.user.name)
+                .join(", ") || "team members"}`}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Capacity</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead className="text-right">Bill</TableHead>
+                  <TableHead>Skills</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {profiles.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.user.name}</TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      {p.weeklyCapacityHrs.toString()}h
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">${p.costRate.toString()}</TableCell>
+                    <TableCell className="tabular-nums text-right">${p.billRate.toString()}</TableCell>
+                    <TableCell className="text-[var(--color-muted-foreground)]">
+                      {p.skills.join(", ") || "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
@@ -115,9 +135,8 @@ export default async function ResourcesPage() {
             <CardTitle>New Allocation</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={createAllocationAction} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <Label htmlFor="projectId">Project</Label>
+            <form action={createAllocationAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Project" htmlFor="projectId">
                 <Select id="projectId" name="projectId" required>
                   {projects.filter((p) => p.status === "ACTIVE").map((p) => (
                     <option key={p.id} value={p.id}>
@@ -125,9 +144,8 @@ export default async function ResourcesPage() {
                     </option>
                   ))}
                 </Select>
-              </div>
-              <div>
-                <Label htmlFor="userId">Resource</Label>
+              </FormField>
+              <FormField label="Resource" htmlFor="userId">
                 <Select id="userId" name="userId" required>
                   {profiles.map((p) => (
                     <option key={p.userId} value={p.userId}>
@@ -135,19 +153,16 @@ export default async function ResourcesPage() {
                     </option>
                   ))}
                 </Select>
-              </div>
-              <div>
-                <Label htmlFor="plannedHours">Planned Hours</Label>
+              </FormField>
+              <FormField label="Planned Hours" htmlFor="plannedHours">
                 <Input id="plannedHours" name="plannedHours" type="number" required />
-              </div>
-              <div>
-                <Label htmlFor="startDate">Start</Label>
+              </FormField>
+              <FormField label="Start" htmlFor="startDate">
                 <Input id="startDate" name="startDate" type="date" required />
-              </div>
-              <div>
-                <Label htmlFor="endDate">End</Label>
+              </FormField>
+              <FormField label="End" htmlFor="endDate">
                 <Input id="endDate" name="endDate" type="date" required />
-              </div>
+              </FormField>
               <div className="flex items-end">
                 <Button type="submit">Allocate</Button>
               </div>
@@ -161,28 +176,28 @@ export default async function ResourcesPage() {
           <CardTitle>Allocations</CardTitle>
         </CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-2">Project</th>
-                <th className="pb-2">Person</th>
-                <th className="pb-2">Hours</th>
-                <th className="pb-2">Period</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Project</TableHead>
+                <TableHead>Person</TableHead>
+                <TableHead className="text-right">Hours</TableHead>
+                <TableHead>Period</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {allocations.map((a) => (
-                <tr key={a.id} className="border-b">
-                  <td className="py-2">{a.project.name}</td>
-                  <td className="py-2">{a.user.name}</td>
-                  <td className="py-2">{a.plannedHours.toString()}</td>
-                  <td className="py-2">
+                <TableRow key={a.id}>
+                  <TableCell className="font-medium">{a.project.name}</TableCell>
+                  <TableCell>{a.user.name}</TableCell>
+                  <TableCell className="tabular-nums text-right">{a.plannedHours.toString()}</TableCell>
+                  <TableCell className="text-[var(--color-muted-foreground)]">
                     {a.startDate.toISOString().slice(0, 10)} — {a.endDate.toISOString().slice(0, 10)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </AppShell>

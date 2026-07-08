@@ -6,9 +6,19 @@ import { listMyTimeEntries, listPendingApprovals } from "@/lib/time/service";
 import { listProjects } from "@/lib/projects/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Input, Select, FormField } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   approveTimeAction,
   createTimeEntryAction,
@@ -44,16 +54,18 @@ export default async function TimePage({
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <h1 className="mb-6 text-2xl font-bold">Time</h1>
+      <PageHeader
+        title="Time"
+        description="Log hours, submit for approval, and review team timesheets."
+      />
 
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Log Time</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createTimeEntryAction} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <Label htmlFor="projectId">Project</Label>
+          <form action={createTimeEntryAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <FormField label="Project" htmlFor="projectId">
               <Select id="projectId" name="projectId" required>
                 {activeProjects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -61,9 +73,8 @@ export default async function TimePage({
                   </option>
                 ))}
               </Select>
-            </div>
-            <div>
-              <Label htmlFor="entryDate">Date</Label>
+            </FormField>
+            <FormField label="Date" htmlFor="entryDate">
               <Input
                 id="entryDate"
                 name="entryDate"
@@ -71,18 +82,16 @@ export default async function TimePage({
                 defaultValue={format(new Date(), "yyyy-MM-dd")}
                 required
               />
-            </div>
-            <div>
-              <Label htmlFor="hours">Hours</Label>
+            </FormField>
+            <FormField label="Hours" htmlFor="hours">
               <Input id="hours" name="hours" type="number" step="0.25" min="0.25" required />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="notes">Notes</Label>
+            </FormField>
+            <FormField label="Notes" htmlFor="notes" className="sm:col-span-2">
               <Input id="notes" name="notes" />
-            </div>
-            <div className="flex items-end gap-2">
+            </FormField>
+            <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="billable" defaultChecked />
+                <Checkbox name="billable" defaultChecked />
                 Billable
               </label>
               <Button type="submit">Add Entry</Button>
@@ -96,42 +105,45 @@ export default async function TimePage({
           <CardTitle>My Timesheet — week of {format(weekStart, "MMM d, yyyy")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2">Date</th>
-                  <th className="pb-2">Project</th>
-                  <th className="pb-2">Hours</th>
-                  <th className="pb-2">Status</th>
-                  <th className="pb-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e) => (
-                  <tr key={e.id} className="border-b">
-                    <td className="py-2">{format(e.entryDate, "EEE M/d")}</td>
-                    <td className="py-2">{e.project.name}</td>
-                    <td className="py-2">{e.hours.toString()}</td>
-                    <td className="py-2">
-                      <Badge variant={e.status === "APPROVED" ? "success" : "default"}>
-                        {e.status}
-                      </Badge>
-                    </td>
-                    <td className="py-2">
-                      {e.status === "DRAFT" && (
-                        <form action={submitTimeEntryAction.bind(null, e.id)}>
-                          <Button type="submit" size="sm" variant="secondary">
-                            Submit
-                          </Button>
-                        </form>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Date</TableHead>
+                <TableHead>Project</TableHead>
+                <TableHead className="text-right">Hours</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {entries.map((e) => (
+                <TableRow key={e.id}>
+                  <TableCell>{format(e.entryDate, "EEE M/d")}</TableCell>
+                  <TableCell className="font-medium">{e.project.name}</TableCell>
+                  <TableCell className="tabular-nums text-right">{e.hours.toString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={e.status === "APPROVED" ? "success" : "warning"}>
+                      {e.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {e.status === "DRAFT" && (
+                      <form action={submitTimeEntryAction.bind(null, e.id)} className="inline">
+                        <Button type="submit" size="sm" variant="outline">
+                          Submit
+                        </Button>
+                      </form>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {entries.length === 0 && (
+            <p className="py-6 text-center text-sm text-[var(--color-muted-foreground)]">
+              No entries this week.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -140,32 +152,32 @@ export default async function TimePage({
           <CardHeader>
             <CardTitle>Pending Approvals</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pending.map((e) => (
-                <div
-                  key={e.id}
-                  className="flex flex-wrap items-center justify-between gap-2 border-b pb-3 text-sm"
-                >
-                  <span>
-                    {e.user.name} — {e.project.name} — {e.hours.toString()}h on{" "}
-                    {format(e.entryDate, "MMM d")}
+          <CardContent className="space-y-3">
+            {pending.map((e) => (
+              <div
+                key={e.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/30 px-4 py-3 text-sm"
+              >
+                <span>
+                  <span className="font-medium">{e.user.name}</span>
+                  <span className="text-[var(--color-muted-foreground)]">
+                    {" "}— {e.project.name} — {e.hours.toString()}h on {format(e.entryDate, "MMM d")}
                   </span>
-                  <div className="flex gap-2">
-                    <form action={approveTimeAction.bind(null, e.id)}>
-                      <Button type="submit" size="sm">
-                        Approve
-                      </Button>
-                    </form>
-                    <form action={rejectTimeAction.bind(null, e.id)}>
-                      <Button type="submit" size="sm" variant="destructive">
-                        Reject
-                      </Button>
-                    </form>
-                  </div>
+                </span>
+                <div className="flex gap-2">
+                  <form action={approveTimeAction.bind(null, e.id)}>
+                    <Button type="submit" size="sm">
+                      Approve
+                    </Button>
+                  </form>
+                  <form action={rejectTimeAction.bind(null, e.id)}>
+                    <Button type="submit" size="sm" variant="destructive">
+                      Reject
+                    </Button>
+                  </form>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

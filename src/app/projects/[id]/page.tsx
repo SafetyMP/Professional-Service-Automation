@@ -6,9 +6,19 @@ import { getProjectBillingStatus } from "@/lib/billing/service";
 import { getProjectProfitabilityDetail } from "@/lib/reporting/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/input";
+import { Input, Select, Label } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   addProjectMemberAction,
   createTaskAction,
@@ -16,17 +26,7 @@ import {
   updateProjectAction,
 } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatMarginPct(value: number | null): string {
-  return value == null ? "—" : `${value}%`;
-}
+import { formatBillingModel, formatCurrency, formatPercent } from "@/lib/utils/format";
 
 export default async function ProjectDetailPage({
   params,
@@ -51,17 +51,15 @@ export default async function ProjectDetailPage({
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{project.name}</h1>
-          <p className="text-[var(--color-muted-foreground)]">
-            {project.client.name} · {formatBillingModel(project.billingModel)}
-          </p>
-        </div>
-        <Badge variant={project.status === "ACTIVE" ? "success" : "default"}>
-          {project.status}
-        </Badge>
-      </div>
+      <PageHeader
+        title={project.name}
+        description={`${project.client.name} · ${formatBillingModel(project.billingModel)}`}
+        actions={
+          <Badge variant={project.status === "ACTIVE" ? "success" : "default"}>
+            {project.status}
+          </Badge>
+        }
+      />
 
       {canManage && (
         <Card className="mb-6">
@@ -121,33 +119,34 @@ export default async function ProjectDetailPage({
       {billingStatus &&
         (billingStatus.billingModel === "FIXED_FEE" ||
           billingStatus.billingModel === "RETAINER") && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Contract Billing</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <p className="text-sm text-[var(--color-muted-foreground)]">Contract Value</p>
-                <p className="text-xl font-bold">
-                  {billingStatus.contractAmount != null
+          <div className="mb-6">
+            <h2 className="mb-4 text-base font-semibold">Contract Billing</h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <StatCard
+                label="Contract Value"
+                value={
+                  billingStatus.contractAmount != null
                     ? `$${formatCurrency(billingStatus.contractAmount)}`
-                    : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-[var(--color-muted-foreground)]">Invoiced</p>
-                <p className="text-xl font-bold">${formatCurrency(billingStatus.invoicedTotal)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-[var(--color-muted-foreground)]">Remaining</p>
-                <p className="text-xl font-bold">
-                  {billingStatus.remaining != null
+                    : "—"
+                }
+                accent="primary"
+              />
+              <StatCard
+                label="Invoiced"
+                value={`$${formatCurrency(billingStatus.invoicedTotal)}`}
+                accent="info"
+              />
+              <StatCard
+                label="Remaining"
+                value={
+                  billingStatus.remaining != null
                     ? `$${formatCurrency(billingStatus.remaining)}`
-                    : "—"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                    : "—"
+                }
+                accent="warning"
+              />
+            </div>
+          </div>
         )}
 
       {profitability && (
@@ -176,7 +175,7 @@ export default async function ProjectDetailPage({
               <div>
                 <p className="text-sm text-[var(--color-muted-foreground)]">Margin</p>
                 <p className="text-xl font-bold">
-                  ${formatCurrency(profitability.summary.margin)} ({formatMarginPct(profitability.summary.marginPct)})
+                  ${formatCurrency(profitability.summary.margin)} ({formatPercent(profitability.summary.marginPct)})
                 </p>
               </div>
             </div>
@@ -199,34 +198,32 @@ export default async function ProjectDetailPage({
             </div>
 
             {profitability.byPerson.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="pb-2">Person</th>
-                      <th className="pb-2 text-right">Hours</th>
-                      <th className="pb-2 text-right">Billed</th>
-                      <th className="pb-2 text-right">Unbilled</th>
-                      <th className="pb-2 text-right">Revenue</th>
-                      <th className="pb-2 text-right">Cost</th>
-                      <th className="pb-2 text-right">Margin</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {profitability.byPerson.map((row) => (
-                      <tr key={row.userId} className="border-b">
-                        <td className="py-2 font-medium">{row.userName}</td>
-                        <td className="py-2 text-right">{row.hours}</td>
-                        <td className="py-2 text-right">${formatCurrency(row.billedRevenue)}</td>
-                        <td className="py-2 text-right">${formatCurrency(row.unbilledRevenue)}</td>
-                        <td className="py-2 text-right">${formatCurrency(row.revenue)}</td>
-                        <td className="py-2 text-right">${formatCurrency(row.cost)}</td>
-                        <td className="py-2 text-right">${formatCurrency(row.margin)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Person</TableHead>
+                    <TableHead className="text-right">Hours</TableHead>
+                    <TableHead className="text-right">Billed</TableHead>
+                    <TableHead className="text-right">Unbilled</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Cost</TableHead>
+                    <TableHead className="text-right">Margin</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {profitability.byPerson.map((row) => (
+                    <TableRow key={row.userId}>
+                      <TableCell className="font-medium">{row.userName}</TableCell>
+                      <TableCell className="tabular-nums text-right">{row.hours}</TableCell>
+                      <TableCell className="tabular-nums text-right">${formatCurrency(row.billedRevenue)}</TableCell>
+                      <TableCell className="tabular-nums text-right">${formatCurrency(row.unbilledRevenue)}</TableCell>
+                      <TableCell className="tabular-nums text-right">${formatCurrency(row.revenue)}</TableCell>
+                      <TableCell className="tabular-nums text-right">${formatCurrency(row.cost)}</TableCell>
+                      <TableCell className="tabular-nums text-right">${formatCurrency(row.margin)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
@@ -299,44 +296,37 @@ export default async function ProjectDetailPage({
             <CardTitle>Recent Time</CardTitle>
           </CardHeader>
           <CardContent>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2">Date</th>
-                  <th className="pb-2">User</th>
-                  <th className="pb-2">Task</th>
-                  <th className="pb-2">Hours</th>
-                  <th className="pb-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Date</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Task</TableHead>
+                  <TableHead className="text-right">Hours</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {project.timeEntries.map((e) => (
-                  <tr key={e.id} className="border-b">
-                    <td className="py-2">{e.entryDate.toISOString().slice(0, 10)}</td>
-                    <td className="py-2">{e.user.name}</td>
-                    <td className="py-2">{e.task?.name ?? "—"}</td>
-                    <td className="py-2">{e.hours.toString()}</td>
-                    <td className="py-2">{e.status}</td>
-                  </tr>
+                  <TableRow key={e.id}>
+                    <TableCell>{e.entryDate.toISOString().slice(0, 10)}</TableCell>
+                    <TableCell>{e.user.name}</TableCell>
+                    <TableCell className="text-[var(--color-muted-foreground)]">
+                      {e.task?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">{e.hours.toString()}</TableCell>
+                    <TableCell>
+                      <Badge variant={e.status === "APPROVED" ? "success" : "warning"}>
+                        {e.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
     </AppShell>
   );
-}
-
-function formatBillingModel(model: string): string {
-  switch (model) {
-    case "FIXED_FEE":
-      return "Fixed Fee";
-    case "RETAINER":
-      return "Retainer";
-    case "MILESTONE":
-      return "Milestone";
-    default:
-      return "T&M";
-  }
 }

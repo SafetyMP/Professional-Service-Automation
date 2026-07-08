@@ -1,22 +1,69 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #fafafa;
-  --color-foreground: #0a0a0a;
+  /* Surfaces */
+  --color-background: #f4f6f9;
+  --color-foreground: #0c1222;
   --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
-  --color-primary: #2563eb;
+  --color-card-foreground: #0c1222;
+
+  /* Brand — refined teal with finance trust */
+  --color-primary: #0d9488;
   --color-primary-foreground: #ffffff;
-  --color-muted: #f4f4f5;
-  --color-muted-foreground: #71717a;
-  --color-border: #e4e4e7;
+  --color-primary-muted: #ccfbf1;
+
+  /* Sidebar — deep slate */
+  --color-sidebar: #0f172a;
+  --color-sidebar-foreground: #e2e8f0;
+  --color-sidebar-muted: #94a3b8;
+  --color-sidebar-accent: #1e293b;
+  --color-sidebar-active: #0d9488;
+
+  /* Neutrals */
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-ring: #0d9488;
+
+  /* Semantic */
   --color-destructive: #dc2626;
-  --color-success: #16a34a;
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #059669;
+  --color-success-muted: #d1fae5;
+  --color-warning: #d97706;
+  --color-warning-muted: #fef3c7;
+  --color-info: #0284c7;
+  --color-info-muted: #e0f2fe;
+
+  /* Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(15 23 42 / 0.04), 0 1px 2px -1px rgb(15 23 42 / 0.04);
+  --shadow-elevated: 0 4px 6px -1px rgb(15 23 42 / 0.06), 0 2px 4px -2px rgb(15 23 42 / 0.04);
 }
 
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
 }

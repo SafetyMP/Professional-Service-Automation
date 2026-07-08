@@ -1,11 +1,23 @@
 import { redirect } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { listClients } from "@/lib/clients/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { FormField } from "@/components/ui/input";
 import { createClientAction, archiveClientAction } from "@/app/actions";
 import { hasMinRole } from "@/lib/auth/rbac";
 
@@ -21,26 +33,27 @@ export default async function ClientsPage() {
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <h1 className="mb-6 text-2xl font-bold">Clients</h1>
+      <PageHeader
+        title="Clients"
+        description="Manage client accounts and contact information."
+      />
+
       {canManage && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Add Client</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={createClientAction} className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <Label htmlFor="name">Name</Label>
+            <form action={createClientAction} className="grid gap-4 sm:grid-cols-3">
+              <FormField label="Name" htmlFor="name">
                 <Input id="name" name="name" required />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
+              </FormField>
+              <FormField label="Email" htmlFor="email">
                 <Input id="email" name="email" type="email" />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
+              </FormField>
+              <FormField label="Phone" htmlFor="phone">
                 <Input id="phone" name="phone" />
-              </div>
+              </FormField>
               <div className="sm:col-span-3">
                 <Button type="submit">Create Client</Button>
               </div>
@@ -48,36 +61,49 @@ export default async function ClientsPage() {
           </CardContent>
         </Card>
       )}
+
       <Card>
         <CardContent className="pt-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-2">Name</th>
-                <th className="pb-2">Email</th>
-                <th className="pb-2">Phone</th>
-                {canManage && <th className="pb-2">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((c) => (
-                <tr key={c.id} className="border-b">
-                  <td className="py-2 font-medium">{c.name}</td>
-                  <td className="py-2">{c.email ?? "—"}</td>
-                  <td className="py-2">{c.phone ?? "—"}</td>
-                  {canManage && (
-                    <td className="py-2">
-                      <form action={archiveClientAction.bind(null, c.id)}>
-                        <Button type="submit" variant="ghost" size="sm">
-                          Archive
-                        </Button>
-                      </form>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {clients.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="No clients yet"
+              description="Add your first client to start creating projects."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  {canManage && <TableHead className="text-right">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clients.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="text-[var(--color-muted-foreground)]">
+                      {c.email ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-[var(--color-muted-foreground)]">
+                      {c.phone ?? "—"}
+                    </TableCell>
+                    {canManage && (
+                      <TableCell className="text-right">
+                        <form action={archiveClientAction.bind(null, c.id)}>
+                          <Button type="submit" variant="ghost" size="sm">
+                            Archive
+                          </Button>
+                        </form>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </AppShell>

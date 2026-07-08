@@ -1,16 +1,28 @@
 import { redirect } from "next/navigation";
+import {
+  AlertTriangle,
+  Briefcase,
+  Clock,
+  DollarSign,
+  Receipt,
+  TrendingUp,
+} from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { AppShell } from "@/components/layout/app-shell";
 import { getDashboardMetrics } from "@/lib/dashboard/service";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils/format";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -23,103 +35,78 @@ export default async function DashboardPage() {
 
   return (
     <AppShell orgName={org?.name ?? "Organization"} userName={session.user.name}>
-      <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Active Projects
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{metrics.activeProjects}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Avg Utilization
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{metrics.avgUtilization}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Total Unbilled WIP
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(metrics.unbilledTotalWip)}</p>
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              Time + expenses ready to bill
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Unbilled Time WIP
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(metrics.unbilledTimeWip)}</p>
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              {metrics.unbilledWipHours} hrs approved
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Unbilled Expenses
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(metrics.unbilledExpenseWip)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Over-allocated
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{metrics.overAllocated}</p>
-          </CardContent>
-        </Card>
+      <PageHeader
+        title="Dashboard"
+        description="Firm-wide KPIs — utilization, WIP, and project burn at a glance."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          label="Active Projects"
+          value={metrics.activeProjects}
+          icon={Briefcase}
+          accent="primary"
+        />
+        <StatCard
+          label="Avg Utilization"
+          value={`${metrics.avgUtilization}%`}
+          icon={TrendingUp}
+          accent="success"
+        />
+        <StatCard
+          label="Total Unbilled WIP"
+          value={`$${formatCurrency(metrics.unbilledTotalWip)}`}
+          hint="Time + expenses ready to bill"
+          icon={DollarSign}
+          accent="warning"
+        />
+        <StatCard
+          label="Unbilled Time WIP"
+          value={`$${formatCurrency(metrics.unbilledTimeWip)}`}
+          hint={`${metrics.unbilledWipHours} hrs approved`}
+          icon={Clock}
+          accent="info"
+        />
+        <StatCard
+          label="Unbilled Expenses"
+          value={`$${formatCurrency(metrics.unbilledExpenseWip)}`}
+          icon={Receipt}
+          accent="default"
+        />
+        <StatCard
+          label="Over-allocated"
+          value={metrics.overAllocated}
+          icon={AlertTriangle}
+          accent={metrics.overAllocated > 0 ? "warning" : "default"}
+        />
       </div>
+
       {metrics.projectBurn.length > 0 && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Project Burn</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2">Project</th>
-                    <th className="pb-2">Logged</th>
-                    <th className="pb-2">Budget</th>
-                    <th className="pb-2">Burn %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {metrics.projectBurn.map((p) => (
-                    <tr key={p.projectId} className="border-b">
-                      <td className="py-2">{p.projectName}</td>
-                      <td className="py-2">{p.loggedHours}h</td>
-                      <td className="py-2">{p.budgetHours}h</td>
-                      <td className="py-2">{p.burnPct}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Project</TableHead>
+                  <TableHead className="text-right">Logged</TableHead>
+                  <TableHead className="text-right">Budget</TableHead>
+                  <TableHead className="text-right">Burn %</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {metrics.projectBurn.map((p) => (
+                  <TableRow key={p.projectId}>
+                    <TableCell className="font-medium">{p.projectName}</TableCell>
+                    <TableCell className="tabular-nums text-right">{p.loggedHours}h</TableCell>
+                    <TableCell className="tabular-nums text-right">{p.budgetHours}h</TableCell>
+                    <TableCell className="tabular-nums text-right">{p.burnPct}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

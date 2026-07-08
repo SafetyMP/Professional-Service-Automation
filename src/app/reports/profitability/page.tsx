@@ -1,22 +1,24 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BarChart3 } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { getProjectProfitabilityReport } from "@/lib/reporting/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatMarginPct(value: number | null): string {
-  return value == null ? "—" : `${value}%`;
-}
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
 function marginVariant(marginPct: number | null): "success" | "warning" | "default" {
   if (marginPct == null) return "default";
@@ -36,86 +38,45 @@ export default async function ProfitabilityPage() {
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <h1 className="mb-2 text-2xl font-bold">Project Profitability</h1>
-      <p className="mb-6 text-sm text-[var(--color-muted-foreground)]">
-        Revenue from approved billable time and expenses. Billed revenue is on invoices;
-        unbilled revenue is approved work not yet invoiced. Cost from approved labor at cost
-        rates plus all approved expenses.
-      </p>
+      <PageHeader
+        title="Project Profitability"
+        description="Revenue from approved billable time and expenses. Billed revenue is on invoices; unbilled is approved work not yet invoiced."
+      />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Billed Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(report.summary.billedRevenue)}</p>
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              On invoices
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Unbilled Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(report.summary.unbilledRevenue)}</p>
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              Approved, not yet invoiced
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Total Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(report.summary.revenue)}</p>
-            <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
-              Billed + unbilled
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Total Cost
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(report.summary.cost)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Total Margin
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">${formatCurrency(report.summary.margin)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-[var(--color-muted-foreground)]">
-              Overall Margin %
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{formatMarginPct(report.summary.marginPct)}</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Billed Revenue"
+          value={`$${formatCurrency(report.summary.billedRevenue)}`}
+          hint="On invoices"
+          accent="primary"
+        />
+        <StatCard
+          label="Unbilled Revenue"
+          value={`$${formatCurrency(report.summary.unbilledRevenue)}`}
+          hint="Approved, not yet invoiced"
+          accent="warning"
+        />
+        <StatCard
+          label="Total Revenue"
+          value={`$${formatCurrency(report.summary.revenue)}`}
+          hint="Billed + unbilled"
+          accent="info"
+        />
+        <StatCard
+          label="Total Cost"
+          value={`$${formatCurrency(report.summary.cost)}`}
+          accent="default"
+        />
+        <StatCard
+          label="Total Margin"
+          value={`$${formatCurrency(report.summary.margin)}`}
+          accent="success"
+        />
+        <StatCard
+          label="Overall Margin %"
+          value={formatPercent(report.summary.marginPct)}
+          accent="primary"
+        />
       </div>
 
       <Card>
@@ -123,52 +84,68 @@ export default async function ProfitabilityPage() {
           <CardTitle>By Project</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2">Project</th>
-                  <th className="pb-2">Client</th>
-                  <th className="pb-2">Status</th>
-                  <th className="pb-2 text-right">Billed</th>
-                  <th className="pb-2 text-right">Unbilled</th>
-                  <th className="pb-2 text-right">Revenue</th>
-                  <th className="pb-2 text-right">Cost</th>
-                  <th className="pb-2 text-right">Margin</th>
-                  <th className="pb-2 text-right">Margin %</th>
-                </tr>
-              </thead>
-              <tbody>
+          {report.projects.length === 0 ? (
+            <EmptyState
+              icon={BarChart3}
+              title="No project data"
+              description="Create projects and log approved time to see profitability."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Project</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Billed</TableHead>
+                  <TableHead className="text-right">Unbilled</TableHead>
+                  <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">Cost</TableHead>
+                  <TableHead className="text-right">Margin</TableHead>
+                  <TableHead className="text-right">Margin %</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {report.projects.map((row) => (
-                  <tr key={row.projectId} className="border-b">
-                    <td className="py-2 font-medium">
-                      <Link href={`/projects/${row.projectId}`} className="hover:underline">
+                  <TableRow key={row.projectId}>
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/projects/${row.projectId}`}
+                        className="hover:text-[var(--color-primary)]"
+                      >
                         {row.projectName}
                       </Link>
-                    </td>
-                    <td className="py-2">{row.clientName}</td>
-                    <td className="py-2">
-                      <Badge variant="default">{row.status}</Badge>
-                    </td>
-                    <td className="py-2 text-right">${formatCurrency(row.billedRevenue)}</td>
-                    <td className="py-2 text-right">${formatCurrency(row.unbilledRevenue)}</td>
-                    <td className="py-2 text-right">${formatCurrency(row.revenue)}</td>
-                    <td className="py-2 text-right">${formatCurrency(row.cost)}</td>
-                    <td className="py-2 text-right">${formatCurrency(row.margin)}</td>
-                    <td className="py-2 text-right">
+                    </TableCell>
+                    <TableCell className="text-[var(--color-muted-foreground)]">
+                      {row.clientName}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{row.status}</Badge>
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.billedRevenue)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.unbilledRevenue)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right font-medium">
+                      ${formatCurrency(row.revenue)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.cost)}
+                    </TableCell>
+                    <TableCell className="tabular-nums text-right">
+                      ${formatCurrency(row.margin)}
+                    </TableCell>
+                    <TableCell className="text-right">
                       <Badge variant={marginVariant(row.marginPct)}>
-                        {formatMarginPct(row.marginPct)}
+                        {formatPercent(row.marginPct)}
                       </Badge>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          {report.projects.length === 0 && (
-            <p className="text-sm text-[var(--color-muted-foreground)]">
-              No projects found for this organization.
-            </p>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

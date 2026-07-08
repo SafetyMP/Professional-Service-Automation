@@ -1,10 +1,21 @@
 import { redirect } from "next/navigation";
+import { UserCog } from "lucide-react";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db/prisma";
 import { getUtilizationReport } from "@/lib/resources/service";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default async function UtilizationPage() {
   const session = await auth();
@@ -17,48 +28,55 @@ export default async function UtilizationPage() {
 
   return (
     <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
-      <h1 className="mb-6 text-2xl font-bold">Utilization</h1>
+      <PageHeader
+        title="Utilization"
+        description="Weekly capacity vs. allocation and actual hours across the team."
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>This Week</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2">Person</th>
-                  <th className="pb-2">Capacity</th>
-                  <th className="pb-2">Allocated</th>
-                  <th className="pb-2">Actual</th>
-                  <th className="pb-2">Utilization</th>
-                  <th className="pb-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
+          {report.length === 0 ? (
+            <EmptyState
+              icon={UserCog}
+              title="No utilization data"
+              description="Add resource profiles on the Resources page to see utilization."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Person</TableHead>
+                  <TableHead className="text-right">Capacity</TableHead>
+                  <TableHead className="text-right">Allocated</TableHead>
+                  <TableHead className="text-right">Actual</TableHead>
+                  <TableHead className="text-right">Utilization</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {report.map((row) => (
-                  <tr key={row.userId} className="border-b">
-                    <td className="py-2 font-medium">{row.userName}</td>
-                    <td className="py-2">{row.capacityHours}h</td>
-                    <td className="py-2">{row.allocatedHours}h</td>
-                    <td className="py-2">{row.actualHours}h</td>
-                    <td className="py-2">{row.utilizationPct}%</td>
-                    <td className="py-2">
+                  <TableRow key={row.userId}>
+                    <TableCell className="font-medium">{row.userName}</TableCell>
+                    <TableCell className="tabular-nums text-right">{row.capacityHours}h</TableCell>
+                    <TableCell className="tabular-nums text-right">{row.allocatedHours}h</TableCell>
+                    <TableCell className="tabular-nums text-right">{row.actualHours}h</TableCell>
+                    <TableCell className="tabular-nums text-right font-medium">
+                      {row.utilizationPct}%
+                    </TableCell>
+                    <TableCell>
                       {row.overAllocated ? (
                         <Badge variant="warning">Over-allocated</Badge>
                       ) : (
                         <Badge variant="success">OK</Badge>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          {report.length === 0 && (
-            <p className="text-sm text-[var(--color-muted-foreground)]">
-              No resource profiles configured. Add profiles on the Resources page.
-            </p>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

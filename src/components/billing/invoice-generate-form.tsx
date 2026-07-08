@@ -12,6 +12,7 @@ export type InvoiceProjectOption = {
   contractAmount: number | null;
   invoicedTotal: number;
   remaining: number | null;
+  readyMilestones: Array<{ id: string; name: string; amount: number }>;
 };
 
 function defaultDateRange() {
@@ -40,11 +41,10 @@ export function InvoiceGenerateForm({
 
   const isContract =
     selected?.billingModel === "FIXED_FEE" || selected?.billingModel === "RETAINER";
+  const isMilestone = selected?.billingModel === "MILESTONE";
 
   const defaultAmount =
-    selected?.billingModel === "RETAINER"
-      ? (selected.remaining ?? selected.contractAmount ?? undefined)
-      : (selected?.remaining ?? selected?.contractAmount ?? undefined);
+    selected?.remaining ?? selected?.contractAmount ?? undefined;
 
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,7 +65,32 @@ export function InvoiceGenerateForm({
         </Select>
       </div>
 
-      {isContract ? (
+      {isMilestone ? (
+        <>
+          <div>
+            <Label htmlFor="milestoneId">Ready Milestone</Label>
+            <Select id="milestoneId" name="milestoneId" required>
+              {selected?.readyMilestones.length ? (
+                selected.readyMilestones.map((milestone) => (
+                  <option key={milestone.id} value={milestone.id}>
+                    {milestone.name} (${milestone.amount.toFixed(2)})
+                  </option>
+                ))
+              ) : (
+                <option value="">No ready milestones</option>
+              )}
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button type="submit" disabled={!selected || !selected.readyMilestones.length}>
+              Generate
+            </Button>
+          </div>
+          <p className="text-sm text-[var(--color-muted-foreground)] sm:col-span-2 lg:col-span-4">
+            Mark milestones Ready on the project page before invoicing.
+          </p>
+        </>
+      ) : isContract ? (
         <>
           <div>
             <Label htmlFor="amount">

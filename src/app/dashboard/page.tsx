@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   const metrics = await getDashboardMetrics(session.user.organizationId);
 
   return (
-    <AppShell orgName={org?.name ?? "Organization"} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? "Organization"} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Dashboard"
         description="Firm-wide KPIs — utilization, WIP, and project burn at a glance."

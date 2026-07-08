@@ -1,30 +1,50 @@
-# MVP Scope — PSA Platform Phase 1
+# MVP Scope — PSA Platform
 
-## Goal
+## Phase 1 (shipped v0.1.x)
 
-Deliver a working Professional Services Automation platform for consulting firms: clients, projects, time, resources, utilization, and invoicing.
+Core multi-tenant PSA: clients, projects, time/expense approval, resources, utilization, T&M invoicing, fixed-fee/retainer billing, profitability reporting, PDF + journal CSV export.
 
-## In scope
+## Phase 2 (shipped v0.2.0 – v0.5.0)
 
-- Multi-tenant organizations with RBAC (ADMIN, MANAGER, CONSULTANT)
-- Clients, projects, tasks, project members
-- Time entry with approval workflow
-- Expense entry with approval workflow
-- Resource profiles, allocations, utilization dashboard
-- Draft invoice generation from approved billable time and expenses
-- Fixed-fee and retainer contract billing with progress invoicing
-- Project profitability reporting (billed vs unbilled revenue)
-- Invoice PDF download and accounting journal CSV export
-- Dashboard KPIs: utilization, unbilled WIP (hours and dollars), unbilled expense WIP, project burn
+### Billing & contracts
 
-## Out of scope (Phase 2+)
+- Contract-aware profitability (fixed-fee, retainer, milestone revenue models)
+- Milestone billing workflow (PLANNED → READY → INVOICED) with contract validation
+- Progress invoicing for fixed-fee and retainer projects
 
-- CRM/accounting integrations
-- Full expense UI
-- General ledger / revenue recognition
-- Mobile native app
+### Expenses
+
+- Expense categories with manager-managed defaults
+- Receipt uploads (JPG, PNG, WebP, PDF)
+- Bulk expense approval
+- Category-aware invoice line descriptions
+- Expense breakdown by category (Expenses page, profitability report, project detail)
+
+### Accounting
+
+- Configurable chart of accounts (Settings → Accounting)
+- Journal CSV export (generic, Xero, QuickBooks formats)
+- Xero OAuth connect + manual journal push from invoices
+- QuickBooks OAuth connect + journal entry push from invoices
+
+### Access & polish
+
+- Manager access to accounting settings (admin-only for OAuth connect)
+- Role-filtered sidebar navigation
+- Milestone reorder and contract-total validation on project pages
 
 ## Demo credentials
 
 - Org: `demo-firm`
 - Admin: `admin@demo.com` / `password123`
+- Manager: `manager@demo.com` / `password123`
+- Consultant: `consultant1@demo.com` / `password123`
+
+## Out of scope (Phase 3+)
+
+- Tax / VAT on invoices
+- Retainer period scheduling and auto-draft invoices
+- Client portal
+- Email notifications for approvals
+- Public API / webhooks
+- Mobile native app

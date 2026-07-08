@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-08
+
+Phase 2 complete — demo-ready for professional services firms.
+
+### Added
+
+- **QuickBooks OAuth**: connect/disconnect in Settings → Accounting, push journal entries from invoice detail
+- Profitability report: billing model, contract/milestone totals, remaining balance columns
+- Org-wide expense breakdown by category on profitability report
+- Per-project expense breakdown by category on project profitability detail
+
+### Changed
+
+- Accounting settings: side-by-side Xero and QuickBooks integration cards
+- README, MVP scope, and screenshots updated for Phase 2 feature set
+
+## [0.4.1] - 2026-07-08
+
+### Fixed
+
+- Managers can access accounting settings; sidebar hides Accounting for consultants
+- Xero connect/disconnect remains admin-only
+
+## [0.4.0] - 2026-07-08
+
+### Added
+
+- Xero OAuth integration: connect/disconnect in Settings → Accounting, push manual journals from invoice detail
+- Optional Xero account codes on chart of accounts for API journal pushes
+- Milestone contract validation: warns when milestone totals exceed contract amount
+- Milestone reorder controls (↑/↓) on project detail
+- Expense summary by category table for managers on the Expenses page
+
+### Changed
+
+- Accounting settings page includes Xero connection status and account code fields
+- Invoice detail shows Xero push status and journal ID after successful push
+
+## [0.3.0] - 2026-07-07
+
+### Added
+
+- Expense categories per organization with manager-managed defaults
+- Receipt uploads for expenses (JPG, PNG, WebP, PDF up to 5 MB) with secure download route
+- Bulk expense approval for managers (approve selected or approve all pending)
+- Category-aware invoice line descriptions for billable expenses
+
+### Changed
+
+- Expenses page redesigned with category picker, receipt column, and approval table
+
+## [0.2.0] - 2026-07-07
+
+### Added
+
+- Contract-aware profitability: fixed-fee and retainer projects use invoice totals and remaining contract balance for revenue instead of hours × rate
+- **Milestone billing**: `Milestone` model with PLANNED → READY → INVOICED workflow, project milestone UI, and milestone-based invoice generation
+- **Accounting export v2**: configurable chart of accounts (Settings → Accounting), Xero manual journal CSV, and QuickBooks Online journal CSV formats
+
+### Changed
+
+- Profitability rules spec updated for contract vs T&M vs milestone revenue recognition
+- Project detail shows "Contract revenue" label for fixed-fee, retainer, and milestone profitability breakdown
+- Journal CSV exports use organization account names from settings
+
 ## [0.1.5] - 2026-07-07
 
 ### Added

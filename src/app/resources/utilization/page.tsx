@@ -27,7 +27,7 @@ export default async function UtilizationPage() {
   const report = await getUtilizationReport(session.user.organizationId, new Date());
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Utilization"
         description="Weekly capacity vs. allocation and actual hours across the team."

@@ -42,7 +42,7 @@ export default async function ResourcesPage() {
   const profileUserIds = new Set(profiles.map((p) => p.userId));
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Resources"
         description="Manage capacity profiles, rates, and project allocations."

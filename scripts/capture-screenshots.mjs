@@ -22,6 +22,7 @@ const pages = [
   { path: "/dashboard", file: "dashboard.png", name: "Dashboard" },
   { path: "/invoices", file: "invoices.png", name: "Invoices" },
   { path: "/reports/profitability", file: "profitability.png", name: "Profitability" },
+  { path: "/settings/accounting", file: "accounting.png", name: "Accounting" },
 ];
 
 /** Frame duration in milliseconds (gifenc stores delay/10 as GIF centiseconds). */

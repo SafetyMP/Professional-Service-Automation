@@ -17,6 +17,8 @@ Next.js 16 (App Router) · TypeScript · PostgreSQL · Prisma 7 · Auth.js · Ta
 | `npm run db:migrate` | Apply Prisma migrations |
 | `npm run db:seed` | Seed demo firm |
 | `npm run dev` | Dev server (default localhost:3000; use `-p 3005` if needed) |
+
+After pulling schema changes: `npm run db:migrate` then restart `npm run dev` (stale Prisma client causes `Unknown field` errors).
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Vitest unit tests |

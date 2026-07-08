@@ -15,6 +15,13 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
+      AUTH_SECRET: ci-test-secret-min-32-chars-long!!
+      AUTH_URL: http://localhost:3000
+      CURSOR_VERIFY_SKIP: "1"
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -35,7 +42,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
@@ -49,9 +56,6 @@ jobs:
           psql -h localhost -U postgres -d psa -c "GRANT ALL ON SCHEMA public TO psa_app;"
 
       - name: Migrate
-        env:
-          DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
-          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
         run: npx prisma migrate deploy
 
       - name: Apply RLS
@@ -60,8 +64,6 @@ jobs:
         run: psql -h localhost -U postgres -d psa -f prisma/rls.sql
 
       - run: ./scripts/verify.sh
-        env:
-          DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
-          DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
-          AUTH_SECRET: ci-test-secret-min-32-chars-long!!
-          AUTH_URL: http://localhost:3000
+
+      - name: Production build
+        run: npm run build

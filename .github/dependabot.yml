@@ -22,6 +22,12 @@ updates:
     ignore:
       - dependency-name: "next-auth"
         update-types: ["version-update:semver-major"]
+      # ESLint 10 breaks eslint-config-next until eslint-plugin-react supports it
+      - dependency-name: "eslint"
+        versions: ["10.*"]
+      # Pinned for @prisma/adapter-pg compatibility (see prisma#29646)
+      - dependency-name: "pg"
+        versions: [">=8.19"]
 
   - package-ecosystem: github-actions
     directory: /

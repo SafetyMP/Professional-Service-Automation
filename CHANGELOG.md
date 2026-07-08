@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependabot configuration for npm and GitHub Actions
 - Node version pin (`.nvmrc`) and EditorConfig
 
+### Fixed
+
+- CI: export Prisma env vars before `npm ci` so `postinstall` generate succeeds on GitHub Actions
+- CI: add production build gate; use `.nvmrc` for Node version
+- Dependabot: ignore ESLint 10 and pg ≥8.19 until upstream compatibility is resolved
+
 ## [0.1.0] - 2026-07-07
 
 ### Added

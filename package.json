@@ -33,6 +33,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
@@ -64,6 +65,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^26.1.0",

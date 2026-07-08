@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-07-07
+
+### Added
+
+- CodeQL security scanning workflow (PR + weekly schedule)
+- Release workflow publishing Docker images to GHCR on GitHub release
+- E2E Playwright smoke tests in CI (login → dashboard, invoices)
+- Shared `scripts/ci-setup-db.sh` for Actions database bootstrap
+- Dependabot: Docker base image updates, PR labels, grouped GitHub Actions
+
 ## [0.1.3] - 2026-07-07
 
 ### Added
@@ -64,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI running `./scripts/verify.sh`
 - README, SECURITY policy, and developer documentation
 
-[Unreleased]: https://github.com/SafetyMP/Professional-Service-Automation/compare/v0.1.3...main
+[Unreleased]: https://github.com/SafetyMP/Professional-Service-Automation/compare/v0.1.4...main
+[0.1.4]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.4
 [0.1.3]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.3
 [0.1.2]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.2
 [0.1.1]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.1

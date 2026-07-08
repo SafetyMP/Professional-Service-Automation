@@ -12,16 +12,17 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
+  AUTH_SECRET: ci-test-secret-min-32-chars-long!!
+  AUTH_URL: http://localhost:3000
+  PLAYWRIGHT_BASE_URL: http://localhost:3000
+  CURSOR_VERIFY_SKIP: "1"
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: postgresql://psa_app:psa_app_dev@localhost:5432/psa?schema=public
-      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/psa?schema=public
-      AUTH_SECRET: ci-test-secret-min-32-chars-long!!
-      AUTH_URL: http://localhost:3000
-      CURSOR_VERIFY_SKIP: "1"
-
     services:
       postgres:
         image: postgres:16-alpine
@@ -47,23 +48,67 @@ jobs:
 
       - run: npm ci
 
-      - name: Setup database role
+      - name: Setup database
         env:
           PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d psa -c "CREATE ROLE psa_app WITH LOGIN PASSWORD 'psa_app_dev' NOSUPERUSER;"
-          psql -h localhost -U postgres -d psa -c "GRANT CONNECT ON DATABASE psa TO psa_app;"
-          psql -h localhost -U postgres -d psa -c "GRANT ALL ON SCHEMA public TO psa_app;"
-
-      - name: Migrate
-        run: npx prisma migrate deploy
-
-      - name: Apply RLS
-        env:
-          PGPASSWORD: postgres
-        run: psql -h localhost -U postgres -d psa -f prisma/rls.sql
+        run: bash scripts/ci-setup-db.sh
 
       - run: ./scripts/verify.sh
 
       - name: Production build
         run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: verify
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: psa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Setup database with demo seed
+        env:
+          PGPASSWORD: postgres
+          SEED_DEMO: "true"
+        run: bash scripts/ci-setup-db.sh
+
+      - run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Start server
+        run: |
+          npm start &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/login >/dev/null; then
+              echo "Server ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server failed to start"
+          exit 1
+
+      - name: E2E smoke tests
+        run: npm run test:e2e

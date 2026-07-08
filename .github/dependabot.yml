@@ -6,6 +6,12 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: chore
+      include: scope
     groups:
       prisma:
         patterns:
@@ -19,6 +25,10 @@ updates:
         patterns:
           - "next-auth"
           - "@auth/*"
+      playwright:
+        patterns:
+          - "playwright"
+          - "@playwright/*"
     ignore:
       - dependency-name: "next-auth"
         update-types: ["version-update:semver-major"]
@@ -35,3 +45,26 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: chore
+      include: scope

@@ -68,12 +68,13 @@ See [`specs/domain/billing-rules.md`](../specs/domain/billing-rules.md) for calc
 ```bash
 npm run test              # all unit tests
 npm run test:watch        # watch mode
+npm run test:e2e          # Playwright smoke tests (server + seed required)
 npm run typecheck         # TypeScript
 npm run lint              # ESLint
 npm run check:boundaries  # import boundaries
 ```
 
-Tests live in `tests/` and use Vitest. Billing and contract logic have dedicated test files (`billing.test.ts`, `contract-billing.test.ts`, `profitability.test.ts`).
+Tests live in `tests/` (Vitest) and `e2e/` (Playwright). CI runs E2E smoke tests after every verify + build.
 
 ## Database
 

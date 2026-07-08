@@ -136,7 +136,18 @@ Release history: [CHANGELOG.md](CHANGELOG.md).
 
 ## CI
 
-GitHub Actions runs `./scripts/verify.sh` on push and pull request with a Postgres service container. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions on every push and pull request:
+
+| Workflow | Purpose |
+|----------|---------|
+| [CI](.github/workflows/ci.yml) | Lint, typecheck, unit tests, boundaries, Prisma validate, production build, **E2E smoke tests** |
+| [CodeQL](.github/workflows/codeql.yml) | Security analysis (weekly + on PR) |
+| [Release](.github/workflows/release.yml) | Publish Docker image to GHCR on release |
+| [Screenshots](.github/workflows/screenshots.yml) | Regenerate README images on release |
+
+Dependabot opens weekly PRs for npm, GitHub Actions, and Docker base images.
+
+Local E2E: `npm run test:e2e` (requires running server + seeded DB on port 3005).
 
 ## Documentation
 

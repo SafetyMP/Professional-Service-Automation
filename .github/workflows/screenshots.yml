@@ -47,22 +47,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Setup database role
+      - name: Setup database with demo seed
         env:
           PGPASSWORD: postgres
-        run: |
-          psql -h localhost -U postgres -d psa -c "CREATE ROLE psa_app WITH LOGIN PASSWORD 'psa_app_dev' NOSUPERUSER;"
-          psql -h localhost -U postgres -d psa -c "GRANT CONNECT ON DATABASE psa TO psa_app;"
-          psql -h localhost -U postgres -d psa -c "GRANT ALL ON SCHEMA public TO psa_app;"
-
-      - run: npx prisma migrate deploy
-
-      - name: Apply RLS
-        env:
-          PGPASSWORD: postgres
-        run: psql -h localhost -U postgres -d psa -f prisma/rls.sql
-
-      - run: npm run db:seed
+          SEED_DEMO: "true"
+        run: bash scripts/ci-setup-db.sh
 
       - run: npm run build
 

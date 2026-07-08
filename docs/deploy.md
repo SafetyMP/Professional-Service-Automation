@@ -68,6 +68,28 @@ docker run --rm -p 3000:3000 \
 
 Ensure the `psa_app` role exists and RLS policies are applied (`prisma/rls.sql`) before serving traffic.
 
+### Pre-built image (GitHub Container Registry)
+
+Each [GitHub release](https://github.com/SafetyMP/Professional-Service-Automation/releases) publishes:
+
+```text
+ghcr.io/safetymp/professional-service-automation:<version>
+```
+
+```bash
+docker pull ghcr.io/safetymp/professional-service-automation:0.1.3
+
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL="postgresql://psa_app:PASSWORD@db-host:5432/psa?schema=public" \
+  -e DIRECT_URL="postgresql://postgres:PASSWORD@db-host:5432/psa?schema=public" \
+  -e AUTH_SECRET="$(openssl rand -base64 32)" \
+  -e AUTH_URL="http://localhost:3000" \
+  -e PGHOST=db-host \
+  ghcr.io/safetymp/professional-service-automation:0.1.3
+```
+
+Make the package public under **Packages** in the repo settings if pulls fail with 403.
+
 ## Railway
 
 1. Create a **PostgreSQL** plugin and a **GitHub repo** service.

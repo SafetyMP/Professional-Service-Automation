@@ -68,3 +68,6 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      - dependency-name: "node"
+        versions: [">=26"]

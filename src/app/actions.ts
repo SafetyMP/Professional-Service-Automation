@@ -239,13 +239,39 @@ export async function updateInvoiceStatusAction(id: string, status: "SENT" | "PA
 
 export async function createExpenseAction(formData: FormData) {
   const user = await requireSession();
-  await expenses.createExpenseEntry(user.organizationId, user.id, {
-    projectId: String(formData.get("projectId")),
-    expenseDate: new Date(String(formData.get("expenseDate"))),
-    amount: Number(formData.get("amount")),
-    description: String(formData.get("description") || "") || undefined,
-    billable: formData.get("billable") === "on",
-  });
+  const receipt = formData.get("receipt");
+  const categoryIdRaw = String(formData.get("categoryId") || "");
+
+  try {
+    await expenses.createExpenseEntry(user.organizationId, user.id, {
+      projectId: String(formData.get("projectId")),
+      expenseDate: new Date(String(formData.get("expenseDate"))),
+      amount: Number(formData.get("amount")),
+      description: String(formData.get("description") || "") || undefined,
+      billable: formData.get("billable") === "on",
+      categoryId: categoryIdRaw || undefined,
+      receipt: receipt instanceof File && receipt.size > 0 ? receipt : undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create expense";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/expenses");
+}
+
+export async function createExpenseCategoryAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  try {
+    await expenses.createExpenseCategory(user.organizationId, {
+      name: String(formData.get("name")),
+      code: String(formData.get("code") || "") || undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create category";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
   revalidatePath("/expenses");
 }
 
@@ -258,7 +284,25 @@ export async function submitExpenseAction(id: string) {
 export async function approveExpenseAction(id: string) {
   const user = await requireSession();
   requireRole(user, "MANAGER");
-  await expenses.approveExpenseEntry(user.organizationId, id, user.id);
+  try {
+    await expenses.approveExpenseEntry(user.organizationId, id, user.id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to approve expense";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath("/expenses");
+}
+
+export async function bulkApproveExpensesAction(formData: FormData) {
+  const user = await requireSession();
+  requireRole(user, "MANAGER");
+  const ids = formData.getAll("expenseIds").map(String);
+  try {
+    await expenses.approveExpenseEntries(user.organizationId, ids, user.id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to approve expenses";
+    redirect(`/expenses?error=${encodeURIComponent(message)}`);
+  }
   revalidatePath("/expenses");
 }
 

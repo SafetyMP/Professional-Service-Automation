@@ -18,6 +18,7 @@ async function main() {
   await prisma.milestone.deleteMany();
   await prisma.timeEntry.deleteMany();
   await prisma.expenseEntry.deleteMany();
+  await prisma.expenseCategory.deleteMany();
   await prisma.allocation.deleteMany();
   await prisma.resourceProfile.deleteMany();
   await prisma.projectMember.deleteMany();
@@ -31,6 +32,22 @@ async function main() {
   const org = await prisma.organization.create({
     data: { name: "Demo Consulting Firm", slug: "demo-firm" },
   });
+
+  await prisma.expenseCategory.createMany({
+    data: [
+      { organizationId: org.id, name: "Travel", code: "TRAVEL" },
+      { organizationId: org.id, name: "Meals & Entertainment", code: "MEALS" },
+      { organizationId: org.id, name: "Software & Subscriptions", code: "SOFTWARE" },
+      { organizationId: org.id, name: "Office Supplies", code: "SUPPLIES" },
+      { organizationId: org.id, name: "Other", code: "OTHER" },
+    ],
+  });
+  const expenseCategories = await prisma.expenseCategory.findMany({
+    where: { organizationId: org.id },
+  });
+  const categoryByCode = new Map(
+    expenseCategories.map((category) => [category.code ?? category.name, category.id]),
+  );
 
   const users = await Promise.all(
     [
@@ -192,6 +209,7 @@ async function main() {
         organizationId: org.id,
         projectId: projects[0].id,
         userId: consultants[0].id,
+        categoryId: categoryByCode.get("TRAVEL"),
         expenseDate: subDays(new Date(), 6),
         amount: 85.42,
         description: "Client workshop rideshare",
@@ -203,6 +221,7 @@ async function main() {
         organizationId: org.id,
         projectId: projects[0].id,
         userId: consultants[1].id,
+        categoryId: categoryByCode.get("MEALS"),
         expenseDate: subDays(new Date(), 4),
         amount: 42.18,
         description: "Team lunch during onsite discovery",
@@ -213,6 +232,7 @@ async function main() {
         organizationId: org.id,
         projectId: projects[2].id,
         userId: consultants[2].id,
+        categoryId: categoryByCode.get("SOFTWARE"),
         expenseDate: subDays(new Date(), 3),
         amount: 129.99,
         description: "Cloud migration test account",

@@ -1,5 +1,6 @@
 import { Decimal } from "@prisma/client/runtime/client";
 import type { BillingModel, Prisma } from "@prisma/client";
+import { formatExpenseInvoiceDescription } from "@/lib/expenses/service";
 import { withOrgContext } from "@/lib/tenancy/with-org-context";
 import { writeAuditLog } from "@/lib/audit/write-audit-log";
 import { emitDomainEvent } from "@/lib/events/bus";
@@ -417,7 +418,7 @@ export async function generateTimeAndMaterialsDraftInvoice(
           billable: true,
           expenseDate: { gte: params.startDate, lte: params.endDate },
         },
-        include: { user: true },
+        include: { user: true, category: true },
       }),
     ]);
 
@@ -447,7 +448,7 @@ export async function generateTimeAndMaterialsDraftInvoice(
       const amount = new Decimal(expense.amount);
       lines.push({
         expenseEntryId: expense.id,
-        description: `Expense — ${expense.description ?? "Reimbursable"} (${expense.user.name}, ${expense.expenseDate.toISOString().slice(0, 10)})`,
+        description: formatExpenseInvoiceDescription(expense),
         quantity: new Decimal(1),
         unitRate: amount,
         amount,

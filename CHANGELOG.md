@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-07
+
+### Added
+
+- Expense categories per organization with manager-managed defaults
+- Receipt uploads for expenses (JPG, PNG, WebP, PDF up to 5 MB) with secure download route
+- Bulk expense approval for managers (approve selected or approve all pending)
+- Category-aware invoice line descriptions for billable expenses
+
+### Changed
+
+- Expenses page redesigned with category picker, receipt column, and approval table
+
 ## [0.2.0] - 2026-07-07
 
 ### Added

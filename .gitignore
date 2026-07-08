@@ -42,3 +42,6 @@ next-env.d.ts
 # prisma
 /prisma/*.db
 generated/
+
+# local uploads
+/var/

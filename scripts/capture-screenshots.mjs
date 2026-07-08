@@ -24,6 +24,9 @@ const pages = [
   { path: "/reports/profitability", file: "profitability.png", name: "Profitability" },
 ];
 
+/** Frame duration in milliseconds (gifenc stores delay/10 as GIF centiseconds). */
+const GIF_FRAME_DELAY_MS = 10_000;
+
 function launchOptions() {
   if (process.env.CI) {
     return { headless: true };
@@ -37,7 +40,7 @@ async function writeDemoGif(frames) {
     const { data, width, height } = PNG.sync.read(buffer);
     const palette = quantize(data, 256);
     const index = applyPalette(data, palette);
-    encoder.writeFrame(index, width, height, { palette, delay: 150 });
+    encoder.writeFrame(index, width, height, { palette, delay: GIF_FRAME_DELAY_MS });
     console.log(`GIF frame: ${name}`);
   }
   encoder.finish();

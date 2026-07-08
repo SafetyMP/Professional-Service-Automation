@@ -70,4 +70,5 @@ updates:
       include: scope
     ignore:
       - dependency-name: "node"
-        versions: [">=26"]
+        # Stay on Node 22 LTS until app and toolchain are validated on newer majors
+        versions: [">=25"]

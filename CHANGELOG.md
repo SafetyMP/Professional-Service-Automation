@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-07-07
+
+### Added
+
+- Multi-arch Docker images (`linux/amd64`, `linux/arm64`) published to GHCR on release
+- Branch protection on `main` requiring CI verify, E2E, and CodeQL checks
+
+### Changed
+
+- Dependabot: ignore Node Docker bumps ≥25 (stay on Node 22 LTS base image)
+
 ## [0.1.4] - 2026-07-07
 
 ### Added
@@ -74,7 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI running `./scripts/verify.sh`
 - README, SECURITY policy, and developer documentation
 
-[Unreleased]: https://github.com/SafetyMP/Professional-Service-Automation/compare/v0.1.4...main
+[Unreleased]: https://github.com/SafetyMP/Professional-Service-Automation/compare/v0.1.5...main
+[0.1.5]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.5
 [0.1.4]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.4
 [0.1.3]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.3
 [0.1.2]: https://github.com/SafetyMP/Professional-Service-Automation/releases/tag/v0.1.2

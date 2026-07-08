@@ -53,7 +53,7 @@ export default async function TimePage({
   const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 });
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Time"
         description="Log hours, submit for approval, and review team timesheets."

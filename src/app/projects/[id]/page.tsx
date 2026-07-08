@@ -68,7 +68,7 @@ export default async function ProjectDetailPage({
       : null;
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title={project.name}
         description={`${project.client.name} · ${formatBillingModel(project.billingModel)}`}

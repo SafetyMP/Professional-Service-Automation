@@ -22,7 +22,9 @@ export default async function AccountingSettingsPage({
   const { error, connected } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (!hasMinRole(session.user.role, "ADMIN")) redirect("/dashboard");
+  if (!hasMinRole(session.user.role, "MANAGER")) redirect("/dashboard");
+
+  const isAdmin = hasMinRole(session.user.role, "ADMIN");
 
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
@@ -34,7 +36,7 @@ export default async function AccountingSettingsPage({
   const xeroReady = isXeroConfigured();
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Accounting Settings"
         description="Chart of accounts for journal exports and Xero API pushes."
@@ -62,21 +64,28 @@ export default async function AccountingSettingsPage({
               <span className="text-sm">
                 {xeroConnection.tenantName ?? xeroConnection.tenantId}
               </span>
-              <form action={disconnectXeroAction}>
-                <Button type="submit" variant="outline" size="sm">
-                  Disconnect
-                </Button>
-              </form>
+              {isAdmin && (
+                <form action={disconnectXeroAction}>
+                  <Button type="submit" variant="outline" size="sm">
+                    Disconnect
+                  </Button>
+                </form>
+              )}
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-3">
               <Badge variant="warning">Not connected</Badge>
-              {xeroReady && (
+              {isAdmin && xeroReady && (
                 <a href="/api/integrations/xero/connect">
                   <Button type="button" size="sm">
                     Connect Xero
                   </Button>
                 </a>
+              )}
+              {!isAdmin && (
+                <span className="text-sm text-[var(--color-muted-foreground)]">
+                  Ask an admin to connect Xero.
+                </span>
               )}
             </div>
           )}

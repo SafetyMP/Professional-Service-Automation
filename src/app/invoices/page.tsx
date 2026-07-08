@@ -82,7 +82,7 @@ export default async function InvoicesPage({
       : null;
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Invoices"
         description="Generate draft invoices from WIP or contract billing."

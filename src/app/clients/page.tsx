@@ -32,7 +32,7 @@ export default async function ClientsPage() {
   const canManage = hasMinRole(session.user.role, "MANAGER");
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Clients"
         description="Manage client accounts and contact information."

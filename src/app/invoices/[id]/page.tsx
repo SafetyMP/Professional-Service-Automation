@@ -66,7 +66,7 @@ export default async function InvoiceDetailPage({
   const quickBooksCsv = exportInvoiceJournalCsv(journalPayload, "quickbooks", accounts);
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title={invoice.invoiceNumber}
         description={`${invoice.project.name} — ${invoice.project.client.name}`}

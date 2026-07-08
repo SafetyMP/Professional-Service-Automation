@@ -37,7 +37,7 @@ export default async function ProfitabilityPage() {
   const report = await getProjectProfitabilityReport(session.user.organizationId);
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Project Profitability"
         description="Revenue from approved billable work and invoices. T&M projects use hours × rate; fixed-fee and retainer projects use invoice totals and remaining contract balance."

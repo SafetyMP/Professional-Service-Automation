@@ -69,7 +69,7 @@ export default async function ExpensesPage({
   const canManage = hasMinRole(session.user.role, "MANAGER");
 
   return (
-    <AppShell orgName={org?.name ?? ""} userName={session.user.name}>
+    <AppShell orgName={org?.name ?? ""} userName={session.user.name} userRole={session.user.role}>
       <PageHeader
         title="Expenses"
         description="Submit reimbursable costs with categories and receipts. Managers can bulk-approve submitted expenses."

@@ -3,22 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { isNavActive, navItems } from "@/lib/navigation";
+import type { OrgRole } from "@prisma/client";
+import { isNavActive, navItemsForRole } from "@/lib/navigation";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 
 export function SidebarNav({
   orgName,
   userName,
+  userRole,
   onNavigate,
   className,
 }: {
   orgName: string;
   userName: string;
+  userRole: OrgRole;
   onNavigate?: () => void;
   className?: string;
 }) {
   const pathname = usePathname();
+  const links = navItemsForRole(userRole);
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
@@ -37,7 +41,7 @@ export function SidebarNav({
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4" aria-label="Main">
-        {navItems.map((link) => {
+        {links.map((link) => {
           const active = isNavActive(pathname, link.href, link.exact);
           const Icon = link.icon;
           return (

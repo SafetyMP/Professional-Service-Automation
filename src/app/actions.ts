@@ -382,7 +382,7 @@ export async function reorderMilestoneAction(
 
 export async function updateAccountingSettingsAction(formData: FormData) {
   const user = await requireSession();
-  requireRole(user, "ADMIN");
+  requireRole(user, "MANAGER");
   await accountingSettings.updateChartOfAccounts(user.organizationId, {
     arAccountName: String(formData.get("arAccountName")),
     serviceRevenueAccount: String(formData.get("serviceRevenueAccount")),

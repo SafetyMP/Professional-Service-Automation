@@ -16,7 +16,7 @@ test.describe("expenses v2 smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Expenses", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Expense Categories" })).toBeVisible();
-    await expect(page.getByText("Travel (TRAVEL)")).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Travel (TRAVEL)" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pending Expense Approvals" })).toBeVisible();
     await expect(page.getByText("Team lunch during onsite discovery")).toBeVisible();
     await expect(page.getByRole("button", { name: /Approve All/ })).toBeVisible();

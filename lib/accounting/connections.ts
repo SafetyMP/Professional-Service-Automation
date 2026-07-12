@@ -1,5 +1,11 @@
 import type { AccountingProvider } from "@prisma/client";
+import { maybeDecrypt, maybeEncrypt } from "@/lib/crypto/token-vault";
 import { withOrgContext } from "@/lib/tenancy/with-org-context";
+
+function tokenEncryptionKey(): string | undefined {
+  const key = process.env.ACCOUNTING_TOKEN_ENCRYPTION_KEY?.trim();
+  return key && key.length >= 32 ? key : undefined;
+}
 
 export type AccountingConnectionView = {
   id: string;
@@ -39,21 +45,22 @@ export async function upsertAccountingConnection(
   },
 ) {
   const provider = data.provider ?? "XERO";
+  const encKey = tokenEncryptionKey();
   return withOrgContext(organizationId, (tx) =>
     tx.accountingConnection.upsert({
       where: { organizationId_provider: { organizationId, provider } },
       create: {
         organizationId,
         provider,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        accessToken: maybeEncrypt(data.accessToken, encKey),
+        refreshToken: maybeEncrypt(data.refreshToken, encKey),
         tokenExpiresAt: data.tokenExpiresAt,
         tenantId: data.tenantId,
         tenantName: data.tenantName ?? null,
       },
       update: {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        accessToken: maybeEncrypt(data.accessToken, encKey),
+        refreshToken: maybeEncrypt(data.refreshToken, encKey),
         tokenExpiresAt: data.tokenExpiresAt,
         tenantId: data.tenantId,
         tenantName: data.tenantName ?? null,
@@ -77,11 +84,20 @@ export async function getAccountingConnectionSecrets(
   organizationId: string,
   provider: AccountingProvider = "XERO",
 ) {
-  return withOrgContext(organizationId, (tx) =>
+  const encKey = tokenEncryptionKey();
+  const row = await withOrgContext(organizationId, (tx) =>
     tx.accountingConnection.findUnique({
       where: { organizationId_provider: { organizationId, provider } },
     }),
   );
+  if (!row || !encKey) {
+    return row;
+  }
+  return {
+    ...row,
+    accessToken: maybeDecrypt(row.accessToken, encKey),
+    refreshToken: maybeDecrypt(row.refreshToken, encKey),
+  };
 }
 
 export async function updateAccountingConnectionTokens(
@@ -93,10 +109,15 @@ export async function updateAccountingConnectionTokens(
     tokenExpiresAt: Date;
   },
 ) {
+  const encKey = tokenEncryptionKey();
   return withOrgContext(organizationId, (tx) =>
     tx.accountingConnection.update({
       where: { organizationId_provider: { organizationId, provider } },
-      data,
+      data: {
+        accessToken: maybeEncrypt(data.accessToken, encKey),
+        refreshToken: maybeEncrypt(data.refreshToken, encKey),
+        tokenExpiresAt: data.tokenExpiresAt,
+      },
     }),
   );
 }

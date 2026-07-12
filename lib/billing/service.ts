@@ -493,7 +493,7 @@ export async function updateInvoiceStatus(
 ) {
   return withOrgContext(organizationId, async (tx) => {
     const invoice = await tx.invoice.update({
-      where: { id },
+      where: { id, organizationId },
       data: { status },
     });
     const action = status === "SENT" ? "INVOICE_SENT" : status === "PAID" ? "INVOICE_PAID" : "INVOICE_CREATED";

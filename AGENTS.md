@@ -13,7 +13,7 @@ Next.js 16 (App Router) · TypeScript · PostgreSQL · Prisma 7 · Auth.js · Ta
 | Command | Purpose |
 |---------|---------|
 | `docker compose up -d` | Start Postgres (port 5440) |
-| `npm install` | Install dependencies |
+| `npm install` | Install dependencies (use `npx npm@10.9.2 install` — CI uses npm 10 on Node 22) |
 | `npm run db:migrate` | Apply Prisma migrations |
 | `npm run db:seed` | Seed demo firm |
 | `npm run dev` | Dev server on port 3005 (`npm run dev -- -p 3005`; matches `.env.example`) |
@@ -51,8 +51,11 @@ Domain logic lives in `lib/<domain>/`. Cross-domain imports must go through publ
 ## Definition of Done
 
 ```bash
+npx npm@10.9.2 ci   # lockfile must match CI (npm 10, not local npm 11)
 ./scripts/verify.sh
 ```
+
+CI also runs Postgres setup, production build, and Playwright e2e — see `.github/workflows/ci.yml`.
 
 ## Fleet
 

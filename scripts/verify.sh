@@ -1,34 +1,31 @@
 #!/usr/bin/env bash
+# Definition of Done — mirrors CI `verify` job steps before Postgres/build (no DB).
+# Full e2e: CI runs ci-setup-db with SEED_DEMO then playwright (see .github/workflows/ci.yml).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if [[ ! -d node_modules ]]; then
-  echo "Run npm install first" >&2
-  exit 1
+if command -v corepack >/dev/null 2>&1; then
+  corepack enable >/dev/null 2>&1 || true
+  corepack prepare npm@10.9.2 --activate >/dev/null 2>&1 || true
 fi
 
-echo "== lint =="
+echo "==> npm ci (expect packageManager npm@10.9.2)"
+npm ci
+
+echo "==> lint + typecheck + test + boundaries + prisma"
 npm run lint
-
-echo "== typecheck =="
 npm run typecheck
-
-echo "== test =="
 npm run test
-
-echo "== boundaries =="
 npm run check:boundaries
-
-echo "== prisma =="
 npx prisma validate
 
 if [[ -z "${CURSOR_VERIFY_SKIP:-}" ]]; then
   HARNESS="${HARNESS:-$HOME/.cursor/bin/harness}"
   if [[ -x "$HARNESS" ]]; then
-    echo "== harness contract =="
+    echo "==> harness contract"
     "$HARNESS" check --contract
   fi
 fi
 
-echo "verify: ok"
+echo "verify: ok (ci/web parity; CI adds Postgres + build + e2e)"

@@ -21,10 +21,10 @@ docker compose up -d
 npm install
 npm run db:migrate
 npm run db:seed
-npm run dev
+npm run dev -- -p 3005
 ```
 
-Demo login: organization `demo-firm`, `admin@demo.com` / `password123`.
+Demo login: organization `demo-firm`, `admin@demo.com` / `password123`. Local dev uses port **3005** (see `.env.example` `AUTH_URL`); Docker stack quick start uses port 3000.
 
 ## Making changes
 

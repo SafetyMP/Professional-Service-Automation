@@ -29,7 +29,8 @@ test("milestone project page loads", async ({ page }) => {
   await page.fill('input[name="password"]', "password123");
   await page.click('button[type="submit"]');
   await page.waitForURL("**/dashboard");
-  await page.goto("/projects/cmrbirfm70010ovo9xmfjnogg");
+  await page.goto("/projects");
+  await page.getByRole("link", { name: "Mobile App Build" }).click();
   await expect(page.getByRole("heading", { name: "Mobile App Build" })).toBeVisible();
   await expect(page.getByText("Milestones")).toBeVisible();
 });

@@ -16,9 +16,7 @@ Next.js 16 (App Router) · TypeScript · PostgreSQL · Prisma 7 · Auth.js · Ta
 | `npm install` | Install dependencies |
 | `npm run db:migrate` | Apply Prisma migrations |
 | `npm run db:seed` | Seed demo firm |
-| `npm run dev` | Dev server (default localhost:3000; use `-p 3005` if needed) |
-
-After pulling schema changes: `npm run db:migrate` then restart `npm run dev` (stale Prisma client causes `Unknown field` errors).
+| `npm run dev` | Dev server on port 3005 (`npm run dev -- -p 3005`; matches `.env.example`) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Vitest unit tests |
@@ -26,6 +24,8 @@ After pulling schema changes: `npm run db:migrate` then restart `npm run dev` (s
 | `./scripts/verify.sh` | Definition of Done (lint, typecheck, test, boundaries, prisma, harness) |
 | `~/.cursor/bin/harness check` | Full harness contract + verify |
 | GitHub Actions CI (`.github/workflows/ci.yml`) | Same `./scripts/verify.sh` with Postgres service |
+
+After pulling schema changes: `npm run db:migrate` then restart `npm run dev` (stale Prisma client causes `Unknown field` errors).
 
 ## Demo login
 
@@ -44,6 +44,8 @@ Domain logic lives in `lib/<domain>/`. Cross-domain imports must go through publ
 | expenses | `lib/expenses/service.ts` |
 | resources | `lib/resources/service.ts` |
 | billing | `lib/billing/service.ts` |
+| accounting | `lib/accounting/` (QuickBooks/Xero integrations) |
+| dashboard | `lib/dashboard/service.ts` |
 | reporting | `lib/reporting/service.ts` |
 
 ## Definition of Done

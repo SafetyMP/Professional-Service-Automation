@@ -59,7 +59,7 @@ After `db:seed`, sign in with `admin@demo.com` / `password123` (org: `demo-firm`
 | `TIME_AND_MATERIALS` | Approved unbilled time/expenses in a date range |
 | `FIXED_FEE` | Dollar amount or % complete against contract |
 | `RETAINER` | Contract/retainer amount (defaults to full contract) |
-| `MILESTONE` | Currently routed as T&M (Phase 2) |
+| `MILESTONE` | `READY` milestones on the project; one invoice line per milestone (see billing-rules) |
 
 See [`specs/domain/billing-rules.md`](../specs/domain/billing-rules.md) for calculation details.
 

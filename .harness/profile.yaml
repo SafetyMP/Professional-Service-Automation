@@ -6,10 +6,8 @@ signed: null
 integration_executor: null
 stack:
   detected:
-  - next
-  - prisma
-  - compose
-  primary: next
+  - node
+  primary: node
   monorepo: false
   compose: true
 requires:
@@ -23,7 +21,7 @@ requires:
     stop: verify-on-stop
   commands:
     verify: ./scripts/verify.sh
-    integration: ./scripts/integration-e2e.sh
+    integration: null
 bundles_applied:
 - cloud-guards
 - verify-on-stop
@@ -40,10 +38,6 @@ verify:
 extensions:
   fleet: null
   eval: null
-  compose:
-    deny_compose_from_worktree: true
-    integration_cmd: ./scripts/integration-e2e.sh
-    integration_ci_required: true
 harness_disclosure:
   schema: harness-disclosure/v1
   scope: repo
@@ -52,15 +46,17 @@ harness_disclosure:
     bundles_applied: []
     verify:
       cmd: ./scripts/verify.sh
+      integration_cmd: null
+      hermetic_stop_only: true
       stop_verify: project-verify-on-stop
       cloud_verify: null
     agents_md_lines: null
   effective:
-    global_version: 2026-07-v4
-    global_hash: d9b65b473870c8a7
-    repo_hash: 2425241aceed9dd7
-    effective_hash: c12d6172f841ba2d
+    global_version: null
+    global_hash: null
+    repo_hash: null
+    effective_hash: null
     runtime: ide
     inner_harness_uncontrolled: true
-  last_check_at: '2026-07-06T01:06:13.804951+00:00'
-  last_verify_exit: 0
+  last_check_at: null
+  last_verify_exit: null

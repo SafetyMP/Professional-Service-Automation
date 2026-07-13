@@ -21,7 +21,8 @@ Next.js 16 (App Router) · TypeScript · PostgreSQL · Prisma 7 · Auth.js · Ta
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Vitest unit tests |
 | `npm run check:boundaries` | Module import boundary lint |
-| `./scripts/verify.sh` | Definition of Done (lint, typecheck, test, boundaries, prisma, harness) |
+| `./scripts/verify.sh` | Hermetic Definition of Done (lint, typecheck, test, boundaries, prisma, harness) |
+| `./scripts/integration-e2e.sh` | Integration E2E — Playwright smoke (CI + main root; not worktrees) |
 | `~/.cursor/bin/harness check` | Full harness contract + verify |
 | GitHub Actions CI (`.github/workflows/ci.yml`) | Same `./scripts/verify.sh` with Postgres service |
 
@@ -55,7 +56,13 @@ npx npm@10.9.2 ci   # lockfile must match CI (npm 10, not local npm 11)
 ./scripts/verify.sh
 ```
 
-CI also runs Postgres setup, production build, and Playwright e2e — see `.github/workflows/ci.yml`.
+When touching runtime, auth, or billing flows, also run from **main repo root** (stack up, DB seeded):
+
+```bash
+./scripts/integration-e2e.sh
+```
+
+CI runs hermetic verify, production build, and `./scripts/integration-e2e.sh` — see `.github/workflows/ci.yml`.
 
 ## Fleet
 

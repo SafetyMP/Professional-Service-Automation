@@ -110,5 +110,8 @@ jobs:
           echo "Server failed to start"
           exit 1
 
-      - name: E2E smoke tests
-        run: npm run test:e2e
+      - name: Integration E2E
+        run: ./scripts/integration-e2e.sh
+
+      - name: Adversarial tier
+        run: bash ./scripts/adversarial.sh

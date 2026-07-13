@@ -1,0 +1,22 @@
+schema: threat-model/v1
+product: Professional Service Automation
+updated: "2026-07-13"
+
+cells:
+  - id: quickbooks_connect
+    method: GET
+    path: /api/integrations/quickbooks/connect
+    principals: [authenticated_user]
+    auth_mechanism: session_cookie
+    trust_boundary: tenant_session
+    establishment_failure: "401 Unauthorized"
+
+deny_cases:
+  - id: anonymous_quickbooks_connect
+    cell: quickbooks_connect
+    principal: anonymous
+    fixture:
+      path: /api/integrations/quickbooks/connect
+    expect:
+      status: 401
+      reason_substring: Unauthorized

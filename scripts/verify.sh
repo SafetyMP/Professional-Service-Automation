@@ -29,3 +29,8 @@ if [[ -z "${CURSOR_VERIFY_SKIP:-}" ]]; then
 fi
 
 echo "verify: ok (ci/web parity; CI adds Postgres + build + e2e)"
+
+if [[ -f ./scripts/check-threat-model.sh ]]; then
+  echo "==> threat model gate"
+  bash ./scripts/check-threat-model.sh
+fi

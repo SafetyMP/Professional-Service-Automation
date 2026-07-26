@@ -1,75 +1,19 @@
-# AGENTS.md
+# Site contract
 
-Professional Services Automation (PSA) platform — project management for professional services firms.
+## Gates
 
-Harness profile: **fleet** (`specs/MANDATE.md` is DRAFT).
-
-## Stack
-
-Next.js 16 (App Router) · TypeScript · PostgreSQL · Prisma 7 · Auth.js · Tailwind
-
-## Commands
 
 | Command | Purpose |
-|---------|---------|
-| `docker compose up -d` | Start Postgres (port 5440) |
-| `npm install` | Install dependencies (use `npx npm@10.9.2 install` — CI uses npm 10 on Node 22) |
-| `npm run db:migrate` | Apply Prisma migrations |
-| `npm run db:seed` | Seed demo firm |
-| `npm run dev` | Dev server on port 3005 (`npm run dev -- -p 3005`; matches `.env.example`) |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript check |
-| `npm run test` | Vitest unit tests |
-| `npm run check:boundaries` | Module import boundary lint |
-| `./scripts/verify.sh` | Hermetic Definition of Done (lint, typecheck, test, boundaries, prisma, harness) |
-| `./scripts/integration-e2e.sh` | Integration E2E — Playwright smoke (CI + main root; not worktrees) |
-| `~/.cursor/bin/harness check` | Full harness contract + verify |
-| GitHub Actions CI (`.github/workflows/ci.yml`) | Same `./scripts/verify.sh` with Postgres service |
+|---|---|
+| `./scripts/verify.sh` | Functional and static acceptance |
+| `./scripts/adversarial.sh` | Authorized local adversarial probes |
 
-After pulling schema changes: `npm run db:migrate` then restart `npm run dev` (stale Prisma client causes `Unknown field` errors).
+Record `verification_scripts` as site-relative `scripts/harness` (exactly `verify.sh` and `adversarial.sh`). Optional wrappers may remain at `scripts/verify.sh` / `scripts/adversarial.sh` for humans; they are outside the digest boundary.
 
-## Demo login
+The corporate handoff fixes scope. The site manager assigns ADRs; site specialists write;
+the root orchestrator dispatches nondelegating workers and runs gate commands; operations
+excellence reviews immutable root-produced evidence. Work in isolated roots, never edit
+corporate approval state, and never self-approve. A site role cannot return work to
+corporate design; that boundary requires an explicit user rework authorization.
 
-- Organization: `demo-firm`
-- Admin: `admin@demo.com` / `password123`
-
-## Module boundaries
-
-Domain logic lives in `lib/<domain>/`. Cross-domain imports must go through public service files only. See `scripts/check-boundaries.ts`.
-
-| Domain | Path |
-|--------|------|
-| clients | `lib/clients/service.ts` |
-| projects | `lib/projects/service.ts` |
-| time | `lib/time/service.ts` |
-| expenses | `lib/expenses/service.ts` |
-| resources | `lib/resources/service.ts` |
-| billing | `lib/billing/service.ts` |
-| accounting | `lib/accounting/` (QuickBooks/Xero integrations) |
-| dashboard | `lib/dashboard/service.ts` |
-| reporting | `lib/reporting/service.ts` |
-
-## Definition of Done
-
-```bash
-npx npm@10.9.2 ci   # lockfile must match CI (npm 10, not local npm 11)
-./scripts/verify.sh
-```
-
-When touching runtime, auth, or billing flows, also run from **main repo root** (stack up, DB seeded):
-
-```bash
-./scripts/integration-e2e.sh
-```
-
-CI runs hermetic verify, production build, and `./scripts/integration-e2e.sh` — see `.github/workflows/ci.yml`.
-
-## Fleet
-
-- `specs/MANDATE.md` — set `Status: ACTIVE` only after user commits executor signature.
-- Run `docker compose up -d` from the **main repo root** only — not from agent worktrees.
-- Do not run compose or integration scripts from `.worktrees/` paths.
-
-## Review
-
-Block on P0/P1: auth bypass, cross-tenant data leak, billing math errors, data loss.
+Site id: `psa`. Prior Cursor Harness v4 is under `_archives/harness-v4/`.

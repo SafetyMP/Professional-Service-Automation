@@ -1,0 +1,24 @@
+{
+  "schema": "harness-v4-archive/v1",
+  "site_id": "psa",
+  "local_path": "/Users/sagehart/Downloads/Professional-Service-Automation",
+  "utc": "20260717T192824Z",
+  "archived": [
+    {
+      "path": ".harness",
+      "sha256": "71b8f2ee973ea4f62aa49b0d2665d57839c056606b9a44faf4cf275e8d464934"
+    },
+    {
+      "path": ".cursor/hooks.json",
+      "sha256": "5c696fc8b4d5ba456a038e0b290bd9d5f3f67a3e0e0e04811020e150568ecd97"
+    },
+    {
+      "path": ".cursor/hooks",
+      "sha256": "ffa5d4085a726832219553ea8a8c44d51c00a23eeb885c7a70d5fd749ed0f33b"
+    },
+    {
+      "path": "AGENTS.md.pre-corp-site",
+      "sha256": "1971ad8b0f736912ea89ef1fd2d90af006848ca58543a2f8abb69dc6f564c7b9"
+    }
+  ]
+}

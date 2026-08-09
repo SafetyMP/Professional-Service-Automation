@@ -59,8 +59,10 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-[harts@wustl.edu](mailto:harts@wustl.edu).
+reported to the community leaders responsible for enforcement via
+[GitHub private vulnerability reporting](https://github.com/SafetyMP/Professional-Service-Automation/security/advisories/new)
+or by contacting maintainers through this repository's GitHub discussions /
+maintainers listed in the org.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

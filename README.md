@@ -6,6 +6,8 @@
 
 Open-source **realization kernel** for consulting firms: utilization, WIP, contract and milestone billing, partner-level profitability, and PostgreSQL row-level security. Timesheets are an input to realization — not the product. Optional Xero and QuickBooks journal push. See [`docs/DESIGN-PIVOT.md`](docs/DESIGN-PIVOT.md).
 
+> **In the SafetyMP thesis:** Human-operated realization kernel. Not an agent-operated PSA. See the [portfolio README](https://github.com/SafetyMP/SafetyMP).
+
 ## Why not Kimai
 
 - **Kimai is a time tracker.** Hours, approvals, and timesheets are its product.

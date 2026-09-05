@@ -1,10 +1,18 @@
-# Professional Service Automation (PSA)
+# Consulting realization kernel
 
 [![CI](https://github.com/SafetyMP/Professional-Service-Automation/actions/workflows/ci.yml/badge.svg)](https://github.com/SafetyMP/Professional-Service-Automation/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/SafetyMP/Professional-Service-Automation)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-Open-source Professional Services Automation platform for consulting and professional services firms. Manage clients, projects, time, expenses, resources, utilization, contract billing, milestones, and profitability — with optional Xero and QuickBooks journal push.
+Open-source **realization kernel** for consulting firms: utilization, WIP, contract and milestone billing, partner-level profitability, and PostgreSQL row-level security. Timesheets are an input to realization — not the product. Optional Xero and QuickBooks journal push. See [`docs/DESIGN-PIVOT.md`](docs/DESIGN-PIVOT.md).
+
+> **Permit rule:** Realization numbers come from approved time, WIP, and contracts — not from a model. Humans operate this kernel. Same instinct: [SafetyMP](https://github.com/SafetyMP/SafetyMP).
+
+## Why not Kimai
+
+- **Kimai is a time tracker.** Hours, approvals, and timesheets are its product.
+- **This repo is realization.** WIP, contract/milestone billing, utilization, and partner-level profitability are the product; time entries feed those numbers.
+- **Postgres RLS is the tenancy model.** Organization isolation is enforced in the database, not only in application middleware.
 
 <p align="center">
   <img src="docs/images/demo.gif" alt="PSA platform demo — dashboard, invoices, and profitability views" width="900" />
@@ -156,9 +164,11 @@ Local E2E: `npm run test:e2e` (requires running server + seeded DB on port 3005)
 
 ## Documentation
 
+- [`docs/DESIGN-PIVOT.md`](docs/DESIGN-PIVOT.md) — realization-kernel positioning (why not Kimai / generic PSA)
 - [`docs/deploy.md`](docs/deploy.md) — Docker, Railway, Fly.io, and production checklist
 - [`docs/development.md`](docs/development.md) — local setup, architecture, testing, and common tasks
-- [`AGENTS.md`](AGENTS.md) — agent/developer contract for this repo
+- [`AGENTS.md`](AGENTS.md) — community agent/developer contract
+- [`docs/factory-overlay.md`](docs/factory-overlay.md) — factory/site overlay (moved out of root AGENTS.md)
 - [`specs/domain/billing-rules.md`](specs/domain/billing-rules.md) — billing model rules
 - [`specs/domain/profitability-rules.md`](specs/domain/profitability-rules.md) — profitability calculations
 

@@ -1,0 +1,30 @@
+# Professional Service Automation — consulting realization kernel
+
+> Utilization, WIP, contract/milestone billing, partner-level profitability, and Postgres RLS. Timesheets are an input to realization, not the product. Not Kimai.
+
+Community and Copilot agents: read AGENTS.md first. Factory overlay is docs/factory-overlay.md.
+
+## Docs
+
+- [README.md](README.md): quick start, why-not-Kimai, demo warning
+- [AGENTS.md](AGENTS.md): community contract and domain map
+- [docs/DESIGN-PIVOT.md](docs/DESIGN-PIVOT.md): realization-kernel positioning
+- [docs/factory-overlay.md](docs/factory-overlay.md): site/factory handoff (not the community lead)
+- [docs/development.md](docs/development.md): architecture and local workflow
+- [specs/domain/billing-rules.md](specs/domain/billing-rules.md)
+- [specs/domain/profitability-rules.md](specs/domain/profitability-rules.md)
+- [Copilot instructions](.github/copilot-instructions.md)
+
+## Domain contracts
+
+- [lib/time/AGENTS.md](lib/time/AGENTS.md)
+- [lib/billing/AGENTS.md](lib/billing/AGENTS.md)
+- [lib/projects/AGENTS.md](lib/projects/AGENTS.md)
+- [lib/resources/AGENTS.md](lib/resources/AGENTS.md)
+- [lib/expenses/AGENTS.md](lib/expenses/AGENTS.md)
+- [lib/clients/AGENTS.md](lib/clients/AGENTS.md)
+
+## Verify
+
+- `./scripts/verify.sh`
+- `./scripts/harness/verify.sh`

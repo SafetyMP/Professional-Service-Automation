@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Override transitive Dependabot CVEs: mysql2 3.24.3, hono 4.12.34, @hono/node-server 1.19.17, fast-uri 3.1.7, browserslist 4.28.9, brace-expansion 1.1.18 / 5.0.9.
+- Pin `node:22-alpine` and `postgres:16-alpine` images to registry digests.
+- Least-privilege GitHub token permissions: CodeQL defaults to `contents: read` with `security-events: write` on the analyze job; Release grants `packages: write` only on the publish job.
+
 ### Changed
 
 - Bump safe npm patch/minor dependencies (Next.js 16.3.4, Auth.js, Playwright, hook-form, lucide-react, TanStack Query, Zod, TypeScript types, tsx). Prisma stays on 7.8.x; `pg` remains pinned below 8.19. Vitest stays on 4.1.9 (npm arborist peer crash on 4.1.11).

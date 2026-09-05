@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bump safe npm patch/minor dependencies (Next.js 16.3.4, Auth.js, Playwright, hook-form, lucide-react, TanStack Query, Zod, TypeScript types, tsx). Prisma stays on 7.8.x; `pg` remains pinned below 8.19. Vitest stays on 4.1.9 (npm arborist peer crash on 4.1.11).
+- Pin GitHub Actions to immutable commit SHAs (CodeQL v4.37.9, checkout v7.0.1, setup-node v7.0.0, Docker and Scorecard actions).
+
 ## [0.5.0] - 2026-07-08
 
 Phase 2 complete — demo-ready for professional services firms.

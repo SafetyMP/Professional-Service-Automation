@@ -38,3 +38,9 @@ Either path is valid. `scripts/verify.sh` execs the harness script.
 - Billing or profitability behavior updates the matching spec.
 - `./scripts/verify.sh` (or `./scripts/harness/verify.sh`) passes before a PR.
 - No secrets, `.env` values, or production use of demo credentials.
+
+## Coding standards (September 2026)
+
+Path-specific Copilot instructions: [`.github/instructions/`](.github/instructions/).
+Repository-wide Copilot file: [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
+Copilot code review skill: [`.github/skills/code-review/SKILL.md`](.github/skills/code-review/SKILL.md).

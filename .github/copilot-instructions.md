@@ -25,3 +25,7 @@ This repository is a **consulting realization kernel**, not a generic time track
 - Never import another domain’s internals; use that module’s `service.ts`.
 - Never commit secrets, `.env` files, or treat demo credentials as production.
 - Never self-approve, invent a gate PASS, or skip `./scripts/verify.sh`.
+
+## Coding standards
+
+Follow path-specific files in [`.github/instructions/`](instructions/). Copilot code review loads [`.github/skills/code-review/`](skills/code-review/).

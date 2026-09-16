@@ -28,3 +28,6 @@ Community and Copilot agents: read AGENTS.md first. Factory overlay is docs/fact
 
 - `./scripts/verify.sh`
 - `./scripts/harness/verify.sh`
+- [.github/copilot-instructions.md](.github/copilot-instructions.md): repository-wide Copilot coding standards
+- [.github/instructions/](.github/instructions/): path-specific Copilot coding standards (September 2026)
+- [.github/skills/code-review/SKILL.md](.github/skills/code-review/SKILL.md): Copilot code review skill

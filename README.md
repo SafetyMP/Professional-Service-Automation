@@ -4,14 +4,14 @@
 [![License](https://img.shields.io/github/license/SafetyMP/Professional-Service-Automation)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-Open-source **realization kernel** for consulting firms: utilization, WIP, contract and milestone billing, partner-level profitability, and PostgreSQL row-level security. Timesheets are an input to realization — not the product. Optional Xero and QuickBooks journal push. See [`docs/DESIGN-PIVOT.md`](docs/DESIGN-PIVOT.md).
+Approved consulting time becomes utilization, WIP dollars, a draft milestone or contract invoice, and project margin. A draft invoice does not consume WIP; time and expenses stay unbilled until the invoice is issued.
 
 > **Permit rule:** Realization numbers come from approved time, WIP, and contracts — not from a model. Humans operate this kernel. Same instinct: [SafetyMP](https://github.com/SafetyMP/SafetyMP).
 
 ## Why not Kimai
 
 - **Kimai is a time tracker.** Hours, approvals, and timesheets are its product.
-- **This repo is realization.** WIP, contract/milestone billing, utilization, and partner-level profitability are the product; time entries feed those numbers.
+- **This repo is realization.** Approved time becomes utilization, WIP dollars, a draft milestone or contract invoice, and project margin.
 - **Postgres RLS is the tenancy model.** Organization isolation is enforced in the database, not only in application middleware.
 
 <p align="center">
@@ -143,7 +143,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, con
 
 ## Roadmap
 
-Phase 1 (MVP) is implemented. Planned Phase 2 items are listed in [`specs/product/mvp-scope.md`](specs/product/mvp-scope.md), including accounting integrations, expanded expense UI, and general ledger support.
+Phase 1 (v0.1.x) and Phase 2 (v0.2.0 – v0.5.0) are shipped. Scope is in [`specs/product/mvp-scope.md`](specs/product/mvp-scope.md). Phase 3+ (tax, retainer auto-draft, client portal, approval email, public API, native mobile) is out of scope.
 
 Release history: [CHANGELOG.md](CHANGELOG.md).
 

@@ -10,7 +10,9 @@
 - Time line amount = `hours × unitRate` (rate precedence below)
 - Expense line amount = face value (`quantity = 1`, `unitRate = amount`)
 - Invoice requires at least one billable time or expense line in range
-- After invoice creation: set source entry `billingStatus = INVOICED`
+- A draft invoice does not consume WIP: source entries stay `billingStatus = UNBILLED`
+- When the invoice is issued (`SENT` or `PAID`), set source entry `billingStatus = INVOICED`
+- Returning an invoice to `DRAFT` sets those source entries back to `UNBILLED`
 
 ### Fixed Fee
 

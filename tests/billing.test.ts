@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "@prisma/client/runtime/client";
-import { invoiceToCsv, invoiceToJournalCsv, resolveEntryBillRate, resolveEntryCostRate } from "@/lib/billing/service";
+import {
+  invoiceToCsv,
+  invoiceToJournalCsv,
+  resolveEntryBillRate,
+  resolveEntryCostRate,
+  sourceBillingStatusForInvoiceStatus,
+} from "@/lib/billing/service";
+
+describe("sourceBillingStatusForInvoiceStatus", () => {
+  it("leaves source time and expenses unbilled while the invoice is a draft", () => {
+    expect(sourceBillingStatusForInvoiceStatus("DRAFT")).toBe("UNBILLED");
+  });
+
+  it("consumes WIP only when the invoice is issued", () => {
+    expect(sourceBillingStatusForInvoiceStatus("SENT")).toBe("INVOICED");
+    expect(sourceBillingStatusForInvoiceStatus("PAID")).toBe("INVOICED");
+  });
+});
 
 describe("resolveEntryBillRate", () => {
   it("uses project override when set", () => {

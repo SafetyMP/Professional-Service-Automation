@@ -33,6 +33,59 @@ export {
 
 const DEFAULT_BILL_RATE = 150;
 
+type InvoiceLifecycleStatus = "DRAFT" | "SENT" | "PAID";
+
+/**
+ * Source time and expenses stay UNBILLED while an invoice is DRAFT.
+ * Issuing the invoice (SENT or PAID) is what consumes WIP.
+ */
+export function sourceBillingStatusForInvoiceStatus(
+  invoiceStatus: InvoiceLifecycleStatus,
+): "UNBILLED" | "INVOICED" {
+  switch (invoiceStatus) {
+    case "DRAFT":
+      return "UNBILLED";
+    case "SENT":
+    case "PAID":
+      return "INVOICED";
+    default: {
+      const exhaustive: never = invoiceStatus;
+      return exhaustive;
+    }
+  }
+}
+
+type SourceLineRef = {
+  timeEntryId?: string | null;
+  expenseEntryId?: string | null;
+};
+
+async function setSourceBillingStatus(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  lines: SourceLineRef[],
+  billingStatus: "UNBILLED" | "INVOICED",
+) {
+  const timeEntryIds = lines.flatMap((line) => (line.timeEntryId ? [line.timeEntryId] : []));
+  const expenseEntryIds = lines.flatMap((line) =>
+    line.expenseEntryId ? [line.expenseEntryId] : [],
+  );
+
+  if (timeEntryIds.length > 0) {
+    await tx.timeEntry.updateMany({
+      where: { organizationId, id: { in: timeEntryIds } },
+      data: { billingStatus },
+    });
+  }
+
+  if (expenseEntryIds.length > 0) {
+    await tx.expenseEntry.updateMany({
+      where: { organizationId, id: { in: expenseEntryIds } },
+      data: { billingStatus },
+    });
+  }
+}
+
 type BillRateProject = { billRateOverride?: Decimal | number | null };
 type BillRateProfile = { billRate: Decimal | number };
 type CostRateProfile = { costRate: Decimal | number };
@@ -405,6 +458,7 @@ export async function generateTimeAndMaterialsDraftInvoice(
           status: "APPROVED",
           billingStatus: "UNBILLED",
           billable: true,
+          invoiceLine: { is: null },
           entryDate: { gte: params.startDate, lte: params.endDate },
         },
         include: { user: true, task: true },
@@ -416,6 +470,7 @@ export async function generateTimeAndMaterialsDraftInvoice(
           status: "APPROVED",
           billingStatus: "UNBILLED",
           billable: true,
+          invoiceLine: { is: null },
           expenseDate: { gte: params.startDate, lte: params.endDate },
         },
         include: { user: true, category: true },
@@ -467,19 +522,12 @@ export async function generateTimeAndMaterialsDraftInvoice(
       },
     });
 
-    if (entries.length > 0) {
-      await tx.timeEntry.updateMany({
-        where: { id: { in: entries.map((e) => e.id) } },
-        data: { billingStatus: "INVOICED" },
-      });
-    }
-
-    if (expenses.length > 0) {
-      await tx.expenseEntry.updateMany({
-        where: { id: { in: expenses.map((e) => e.id) } },
-        data: { billingStatus: "INVOICED" },
-      });
-    }
+    await setSourceBillingStatus(
+      tx,
+      organizationId,
+      invoice.lines,
+      sourceBillingStatusForInvoiceStatus("DRAFT"),
+    );
 
     return invoice;
   });
@@ -488,7 +536,7 @@ export async function generateTimeAndMaterialsDraftInvoice(
 export async function updateInvoiceStatus(
   organizationId: string,
   id: string,
-  status: "DRAFT" | "SENT" | "PAID",
+  status: InvoiceLifecycleStatus,
   userId: string,
 ) {
   return withOrgContext(organizationId, async (tx) => {
@@ -496,6 +544,16 @@ export async function updateInvoiceStatus(
       where: { id, organizationId },
       data: { status },
     });
+    const lines = await tx.invoiceLine.findMany({
+      where: { invoiceId: id, organizationId },
+      select: { timeEntryId: true, expenseEntryId: true },
+    });
+    await setSourceBillingStatus(
+      tx,
+      organizationId,
+      lines,
+      sourceBillingStatusForInvoiceStatus(status),
+    );
     const action = status === "SENT" ? "INVOICE_SENT" : status === "PAID" ? "INVOICE_PAID" : "INVOICE_CREATED";
     if (status !== "DRAFT") {
       await writeAuditLog(tx, {

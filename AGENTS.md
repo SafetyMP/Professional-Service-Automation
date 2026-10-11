@@ -2,7 +2,7 @@
 
 Community contract for contributors and coding agents. Factory/site overlay (corporate handoff, digest-bound gates) lives in [`docs/factory-overlay.md`](docs/factory-overlay.md). Product positioning: [`docs/DESIGN-PIVOT.md`](docs/DESIGN-PIVOT.md).
 
-This repo is a **realization kernel** (utilization, WIP, contract/milestone billing, partner-level profitability, Postgres RLS). Timesheets are an input — do not delete `lib/time`. Do not merge this tree with HR-ERP.
+This repo is a **realization kernel**. Approved time becomes utilization, WIP dollars, a draft invoice, and project margin. There is no partner-equity model. Timesheets are an input — do not delete `lib/time`. Do not merge this tree with HR-ERP.
 
 ## Domain contracts
 

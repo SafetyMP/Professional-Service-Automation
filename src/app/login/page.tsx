@@ -30,13 +30,13 @@ export default async function LoginPage() {
         </div>
         <div className="space-y-4">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-            Professional services,
+            Utilization, WIP,
             <br />
-            <span className="text-[var(--color-primary-muted)]">fully automated.</span>
+            <span className="text-[var(--color-primary-muted)]">draft invoices, and margin.</span>
           </h2>
           <p className="max-w-md text-sm text-[var(--color-sidebar-muted)]">
-            Time, billing, utilization, and profitability — unified for consulting and
-            professional services firms.
+            Approved consulting time becomes utilization, WIP dollars, a draft invoice,
+            and project margin.
           </p>
         </div>
         <p className="text-xs text-[var(--color-sidebar-muted)]">

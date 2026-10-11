@@ -1,6 +1,6 @@
 # Design pivot — realization kernel
 
-This repository stops competing as a generic PSA or time tracker. Kimai (~4.7k stars), Akaunting, and Alga PSA already cover hours, invoicing, and “full PSA.” The unique slice here is a **realization kernel**: utilization, WIP, contract and milestone billing, partner-level profitability, and PostgreSQL row-level security.
+This repository stops competing as a generic PSA or time tracker. Kimai (~4.7k stars), Akaunting, and Alga PSA already cover hours, invoicing, and “full PSA.” The unique slice here is a **realization kernel**: approved time becomes utilization, WIP dollars, a draft invoice, and project margin. There is no partner-equity model.
 
 ## What this is
 
@@ -9,7 +9,7 @@ Consulting firms need to know whether booked work turns into recognized, collect
 - **Utilization** — resource allocations versus available capacity
 - **WIP** — approved unbilled time and expenses waiting on a billing model
 - **Contract / milestone billing** — T&M, fixed fee, retainer, and milestone invoices
-- **Partner-level profitability** — realization after contract and milestone rules, not hours × list rate
+- **Project margin** — realization after contract and milestone rules, not hours × list rate
 - **Postgres RLS** — organization isolation enforced in the database
 
 Timesheets stay. They are an **input to realization**, not the product. Do not delete time-entry, approval, or `lib/time` code in this pivot.

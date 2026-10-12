@@ -1,4 +1,5 @@
 import type { BillingModel, ProjectStatus } from "@prisma/client";
+import { sumRealizedInvoiceSubtotals } from "@/lib/billing/realization";
 import { resolveEntryBillRate, resolveEntryCostRate } from "@/lib/billing/service";
 import type { ExpenseCategorySummary } from "@/lib/expenses/summary";
 import { getExpenseSummaryByCategory } from "@/lib/expenses/summary";
@@ -244,6 +245,7 @@ export function computeProjectProfitabilityDetail(
         { billRateOverride: billRateOverride ?? entry.billRateOverride },
         profile ? { billRate: profile.billRate } : null,
       );
+      if (billRate == null) continue;
       const amount = entry.hours * billRate;
       if (entry.billingStatus === "INVOICED") {
         billedRevenue += amount;
@@ -352,6 +354,7 @@ export function computeProjectProfitability(
         { billRateOverride: entry.billRateOverride },
         profile ? { billRate: profile.billRate } : null,
       );
+      if (billRate == null) continue;
       addBillableRevenue(
         billedRevenueByProject,
         unbilledRevenueByProject,
@@ -472,10 +475,9 @@ export async function getProjectProfitabilityReport(
         where: { organizationId },
         select: { userId: true, billRate: true, costRate: true },
       }),
-      tx.invoice.groupBy({
-        by: ["projectId"],
+      tx.invoice.findMany({
         where: { organizationId },
-        _sum: { subtotal: true },
+        select: { projectId: true, status: true, subtotal: true },
       }),
       tx.milestone.findMany({
         where: { organizationId },
@@ -483,8 +485,17 @@ export async function getProjectProfitabilityReport(
       }),
     ]);
 
+    const invoicesByProject = new Map<string, Array<{ status: "DRAFT" | "SENT" | "PAID"; subtotal: number }>>();
+    for (const row of invoiceTotals) {
+      const list = invoicesByProject.get(row.projectId) ?? [];
+      list.push({ status: row.status, subtotal: Number(row.subtotal) });
+      invoicesByProject.set(row.projectId, list);
+    }
     const invoicedByProject = new Map(
-      invoiceTotals.map((row) => [row.projectId, Number(row._sum.subtotal ?? 0)]),
+      [...invoicesByProject.entries()].map(([projectId, invoices]) => [
+        projectId,
+        sumRealizedInvoiceSubtotals(invoices),
+      ]),
     );
     const milestonesByProject = new Map<
       string,
@@ -590,9 +601,9 @@ export async function getProjectProfitabilityDetail(
         where: { organizationId },
         select: { userId: true, billRate: true, costRate: true },
       }),
-      tx.invoice.aggregate({
+      tx.invoice.findMany({
         where: { organizationId, projectId },
-        _sum: { subtotal: true },
+        select: { status: true, subtotal: true },
       }),
       tx.milestone.findMany({
         where: { organizationId, projectId },
@@ -628,7 +639,9 @@ export async function getProjectProfitabilityDetail(
       projectId,
       project.billingModel,
       project.contractAmount != null ? Number(project.contractAmount) : null,
-      Number(invoiced._sum.subtotal ?? 0),
+      sumRealizedInvoiceSubtotals(
+        invoiced.map((row) => ({ status: row.status, subtotal: Number(row.subtotal) })),
+      ),
       milestones.map((milestone) => ({
         amount: Number(milestone.amount),
         status: milestone.status,

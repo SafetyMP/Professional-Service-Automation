@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { updateInvoiceStatusAction, pushInvoiceToXeroAction, pushInvoiceToQuickBooksAction } from "@/app/actions";
+import { updateInvoiceStatusAction, voidDraftInvoiceAction, pushInvoiceToXeroAction, pushInvoiceToQuickBooksAction } from "@/app/actions";
 import { getAccountingConnection } from "@/lib/accounting/connections";
 import { isXeroConfigured } from "@/lib/accounting/xero/config";
 import { isQuickBooksConfigured } from "@/lib/accounting/quickbooks/config";
@@ -151,6 +151,13 @@ export default async function InvoiceDetailPage({
         {isAdmin && invoice.status === "DRAFT" && (
           <form action={updateInvoiceStatusAction.bind(null, invoice.id, "SENT")}>
             <Button type="submit">Mark Sent</Button>
+          </form>
+        )}
+        {isAdmin && invoice.status === "DRAFT" && (
+          <form action={voidDraftInvoiceAction.bind(null, invoice.id)}>
+            <Button type="submit" variant="outline">
+              Void draft
+            </Button>
           </form>
         )}
         {isAdmin && invoice.status === "SENT" && (

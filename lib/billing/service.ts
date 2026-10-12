@@ -14,6 +14,13 @@ import {
   milestoneLineDescription,
 } from "@/lib/billing/milestone-billing";
 import {
+  sourceStatusesFor,
+  sumCommittedInvoiceSubtotals,
+  sumRealizedInvoiceSubtotals,
+  type InvoiceLifecycleStatus,
+  type RealizationStep,
+} from "@/lib/billing/realization";
+import {
   exportInvoiceJournalCsv,
   exportInvoicesJournalCsv,
   invoiceToJournalCsv,
@@ -30,10 +37,6 @@ export {
   type AccountingExportFormat,
   type JournalInvoice,
 };
-
-const DEFAULT_BILL_RATE = 150;
-
-type InvoiceLifecycleStatus = "DRAFT" | "SENT" | "PAID";
 
 /**
  * Source time and expenses stay UNBILLED while an invoice is DRAFT.
@@ -90,17 +93,22 @@ type BillRateProject = { billRateOverride?: Decimal | number | null };
 type BillRateProfile = { billRate: Decimal | number };
 type CostRateProfile = { costRate: Decimal | number };
 
+/**
+ * ASC 606-10-32-2: the transaction price is the consideration the firm expects
+ * to be entitled to. A missing project rate and a missing resource profile are
+ * not a price, so the entry stays unpriced.
+ */
 export function resolveEntryBillRate(
   project: BillRateProject,
   profile: BillRateProfile | null | undefined,
-): number {
+): number | null {
   if (project.billRateOverride != null) {
     return Number(project.billRateOverride);
   }
   if (profile) {
     return Number(profile.billRate);
   }
-  return DEFAULT_BILL_RATE;
+  return null;
 }
 
 export function resolveEntryCostRate(profile: CostRateProfile | null | undefined): number {
@@ -114,18 +122,18 @@ export async function resolveBillRate(
   organizationId: string,
   userId: string,
   projectId: string,
-): Promise<number> {
+): Promise<number | null> {
   return withOrgContext(organizationId, async (tx) => {
     const project = await tx.project.findFirst({
       where: { id: projectId, organizationId },
     });
-    if (project?.billRateOverride) {
+    if (project?.billRateOverride != null) {
       return Number(project.billRateOverride);
     }
     const profile = await tx.resourceProfile.findFirst({
       where: { userId, organizationId },
     });
-    return profile ? Number(profile.billRate) : 150;
+    return profile ? Number(profile.billRate) : null;
   });
 }
 
@@ -156,14 +164,14 @@ export async function getProjectBillingStatus(organizationId: string, projectId:
     });
     if (!project) return null;
 
-    const invoiced = await tx.invoice.aggregate({
+    const invoices = await tx.invoice.findMany({
       where: { organizationId, projectId },
-      _sum: { subtotal: true },
+      select: { status: true, subtotal: true },
     });
 
     const contractAmount =
       project.contractAmount != null ? Number(project.contractAmount) : null;
-    const invoicedTotal = Number(invoiced._sum.subtotal ?? 0);
+    const invoicedTotal = sumRealizedInvoiceSubtotals(invoiceSubtotalRows(invoices));
 
     return {
       billingModel: project.billingModel,
@@ -185,6 +193,63 @@ type InvoiceLineInput = {
   amount: Decimal;
 };
 
+type RealizationLine = {
+  timeEntryId?: string | null;
+  expenseEntryId?: string | null;
+  milestoneId?: string | null;
+};
+
+function invoiceSubtotalRows(
+  invoices: Array<{ status: InvoiceLifecycleStatus; subtotal: Decimal | number }>,
+) {
+  return invoices.map((invoice) => ({
+    status: invoice.status,
+    subtotal: Number(invoice.subtotal),
+  }));
+}
+
+async function applyLineRealization(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  lines: RealizationLine[],
+  step: RealizationStep,
+  invoiceStatus: InvoiceLifecycleStatus,
+) {
+  const statuses = sourceStatusesFor(step, invoiceStatus);
+  const timeIds = lines.flatMap((line) => (line.timeEntryId ? [line.timeEntryId] : []));
+  const expenseIds = lines.flatMap((line) => (line.expenseEntryId ? [line.expenseEntryId] : []));
+  const milestoneIds = lines.flatMap((line) => (line.milestoneId ? [line.milestoneId] : []));
+
+  if (timeIds.length > 0) {
+    await tx.timeEntry.updateMany({
+      where: { organizationId, id: { in: timeIds } },
+      data: { billingStatus: statuses.time },
+    });
+  }
+
+  if (expenseIds.length > 0) {
+    await tx.expenseEntry.updateMany({
+      where: { organizationId, id: { in: expenseIds } },
+      data: { billingStatus: statuses.expense },
+    });
+  }
+
+  if (milestoneIds.length > 0) {
+    await tx.milestone.updateMany({
+      where: { organizationId, id: { in: milestoneIds } },
+      data: { status: statuses.milestone },
+    });
+  }
+}
+
+/** Per-firm document number. The sequence only increases, including after a void. */
+export function formatInvoiceNumber(sequence: number): string {
+  if (!Number.isInteger(sequence) || sequence < 1) {
+    throw new Error("invoice sequence must be a positive integer");
+  }
+  return `INV-${String(sequence).padStart(5, "0")}`;
+}
+
 async function createDraftInvoiceRecord(
   tx: Prisma.TransactionClient,
   params: {
@@ -195,8 +260,12 @@ async function createDraftInvoiceRecord(
     metadata: Record<string, string>;
   },
 ) {
-  const count = await tx.invoice.count({ where: { organizationId: params.organizationId } });
-  const invoiceNumber = `INV-${String(count + 1).padStart(5, "0")}`;
+  const issued = await tx.organization.update({
+    where: { id: params.organizationId },
+    data: { nextInvoiceNumber: { increment: 1 } },
+    select: { nextInvoiceNumber: true },
+  });
+  const invoiceNumber = formatInvoiceNumber(issued.nextInvoiceNumber);
   const subtotal = params.lines.reduce(
     (sum, line) => sum.add(line.amount),
     new Decimal(0),
@@ -231,6 +300,8 @@ async function createDraftInvoiceRecord(
     },
     include: { lines: true },
   });
+
+  await applyLineRealization(tx, params.organizationId, invoice.lines, "draft", "DRAFT");
 
   await writeAuditLog(tx, {
     organizationId: params.organizationId,
@@ -333,17 +404,17 @@ export async function generateContractDraftInvoice(
     });
     if (!project) throw new Error("Project not found");
 
-    const invoiced = await tx.invoice.aggregate({
+    const invoices = await tx.invoice.findMany({
       where: { organizationId, projectId: project.id },
-      _sum: { subtotal: true },
+      select: { status: true, subtotal: true },
     });
-    const invoicedTotal = Number(invoiced._sum.subtotal ?? 0);
+    const committedTotal = sumCommittedInvoiceSubtotals(invoiceSubtotalRows(invoices));
     const contractAmount =
       project.contractAmount != null ? Number(project.contractAmount) : null;
 
     const amount = resolveContractInvoiceAmount({
       contractAmount,
-      invoicedTotal,
+      invoicedTotal: committedTotal,
       amount: params.amount,
       percentComplete: params.percentComplete,
       defaultAmount:
@@ -402,14 +473,18 @@ export async function generateMilestoneDraftInvoice(
 
     const milestone = await tx.milestone.findFirst({
       where: { id: params.milestoneId, organizationId, projectId: project.id },
+      include: { invoiceLine: true },
     });
     if (!milestone) throw new Error("Milestone not found");
     assertMilestoneInvoiceable(milestone.status);
+    if (milestone.invoiceLine) {
+      throw new Error("Milestone is already on an invoice");
+    }
 
     const amount = Number(milestone.amount);
     const description = milestoneLineDescription(milestone.name, project.name);
 
-    const invoice = await createDraftInvoiceRecord(tx, {
+    return createDraftInvoiceRecord(tx, {
       organizationId,
       userId,
       project: { id: project.id, clientId: project.clientId, name: project.name },
@@ -428,13 +503,6 @@ export async function generateMilestoneDraftInvoice(
         milestoneName: milestone.name,
       },
     });
-
-    await tx.milestone.update({
-      where: { id: milestone.id },
-      data: { status: "INVOICED" },
-    });
-
-    return invoice;
   });
 }
 
@@ -487,7 +555,13 @@ export async function generateTimeAndMaterialsDraftInvoice(
       const profile = await tx.resourceProfile.findFirst({
         where: { userId: entry.userId, organizationId },
       });
-      const unitRate = new Decimal(resolveEntryBillRate(project, profile));
+      const rate = resolveEntryBillRate(project, profile);
+      if (rate == null) {
+        throw new Error(
+          `No agreed bill rate for ${entry.user.name}. Set a project override or a resource profile before drafting an invoice.`,
+        );
+      }
+      const unitRate = new Decimal(rate);
       const quantity = new Decimal(entry.hours);
       const amount = quantity.mul(unitRate);
       lines.push({
@@ -510,7 +584,7 @@ export async function generateTimeAndMaterialsDraftInvoice(
       });
     }
 
-    const invoice = await createDraftInvoiceRecord(tx, {
+    return createDraftInvoiceRecord(tx, {
       organizationId,
       userId,
       project: { id: project.id, clientId: project.clientId, name: project.name },
@@ -521,15 +595,57 @@ export async function generateTimeAndMaterialsDraftInvoice(
         expenseLineCount: String(expenses.length),
       },
     });
+  });
+}
 
-    await setSourceBillingStatus(
-      tx,
-      organizationId,
-      invoice.lines,
-      sourceBillingStatusForInvoiceStatus("DRAFT"),
-    );
+async function loadInvoiceForRealization(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  id: string,
+) {
+  const invoice = await tx.invoice.findFirst({
+    where: { id, organizationId },
+    include: { lines: true },
+  });
+  if (!invoice) throw new Error("Invoice not found");
+  return invoice;
+}
 
-    return invoice;
+async function issueInvoiceTx(
+  tx: Prisma.TransactionClient,
+  organizationId: string,
+  id: string,
+  userId: string,
+) {
+  const invoice = await loadInvoiceForRealization(tx, organizationId, id);
+  await applyLineRealization(tx, organizationId, invoice.lines, "issue", invoice.status);
+  const issued = await tx.invoice.update({
+    where: { id: invoice.id },
+    data: { status: "SENT" },
+  });
+  await writeAuditLog(tx, {
+    organizationId,
+    userId,
+    action: "INVOICE_SENT",
+    entityType: "Invoice",
+    entityId: invoice.id,
+  });
+  await emitDomainEvent({ type: "InvoiceApproved", organizationId, invoiceId: invoice.id });
+  return issued;
+}
+
+export async function issueInvoice(organizationId: string, id: string, userId: string) {
+  return withOrgContext(organizationId, (tx) => issueInvoiceTx(tx, organizationId, id, userId));
+}
+
+export async function voidDraftInvoice(organizationId: string, id: string, userId: string) {
+  if (!userId) throw new Error("User is required to void a draft invoice");
+  return withOrgContext(organizationId, async (tx) => {
+    const invoice = await loadInvoiceForRealization(tx, organizationId, id);
+    await applyLineRealization(tx, organizationId, invoice.lines, "void", invoice.status);
+    await tx.invoice.delete({ where: { id: invoice.id } });
+    // nextInvoiceNumber stays where it is, so this number is not issued again.
+    return { id: invoice.id, invoiceNumber: invoice.invoiceNumber };
   });
 }
 
@@ -540,21 +656,29 @@ export async function updateInvoiceStatus(
   userId: string,
 ) {
   return withOrgContext(organizationId, async (tx) => {
+    if (status === "SENT") {
+      return issueInvoiceTx(tx, organizationId, id, userId);
+    }
+
+    const existing = await loadInvoiceForRealization(tx, organizationId, id);
+    const realizeOnPay = status === "PAID" && existing.status === "DRAFT";
+    if (realizeOnPay) {
+      await applyLineRealization(tx, organizationId, existing.lines, "issue", existing.status);
+    }
+
     const invoice = await tx.invoice.update({
       where: { id, organizationId },
       data: { status },
     });
-    const lines = await tx.invoiceLine.findMany({
-      where: { invoiceId: id, organizationId },
-      select: { timeEntryId: true, expenseEntryId: true },
-    });
-    await setSourceBillingStatus(
-      tx,
-      organizationId,
-      lines,
-      sourceBillingStatusForInvoiceStatus(status),
-    );
-    const action = status === "SENT" ? "INVOICE_SENT" : status === "PAID" ? "INVOICE_PAID" : "INVOICE_CREATED";
+    if (status === "DRAFT") {
+      await setSourceBillingStatus(
+        tx,
+        organizationId,
+        existing.lines,
+        sourceBillingStatusForInvoiceStatus("DRAFT"),
+      );
+    }
+    const action = status === "PAID" ? "INVOICE_PAID" : "INVOICE_CREATED";
     if (status !== "DRAFT") {
       await writeAuditLog(tx, {
         organizationId,
@@ -563,9 +687,9 @@ export async function updateInvoiceStatus(
         entityType: "Invoice",
         entityId: id,
       });
-      if (status === "SENT") {
-        await emitDomainEvent({ type: "InvoiceApproved", organizationId, invoiceId: id });
-      }
+    }
+    if (realizeOnPay) {
+      await emitDomainEvent({ type: "InvoiceApproved", organizationId, invoiceId: id });
     }
     return invoice;
   });

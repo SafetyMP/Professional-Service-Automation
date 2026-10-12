@@ -240,6 +240,20 @@ export async function updateInvoiceStatusAction(id: string, status: "SENT" | "PA
   revalidatePath(`/invoices/${id}`);
 }
 
+export async function voidDraftInvoiceAction(id: string) {
+  const user = await requireSession();
+  requireRole(user, "ADMIN");
+  try {
+    await billing.voidDraftInvoice(user.organizationId, id, user.id);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to void invoice";
+    redirect(`/invoices/${id}?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath("/invoices");
+  revalidatePath(`/invoices/${id}`);
+  redirect("/invoices");
+}
+
 export async function createExpenseAction(formData: FormData) {
   const user = await requireSession();
   const receipt = formData.get("receipt");

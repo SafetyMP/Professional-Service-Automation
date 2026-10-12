@@ -1,4 +1,10 @@
 import { describe, expect, it } from "vitest";
+import {
+  milestoneStatusAfter,
+  sumRealizedInvoiceSubtotals,
+  timeExpenseBillingStatus,
+  transitionSource,
+} from "@/lib/billing/realization";
 import { computeProjectProfitability, computeProjectProfitabilityDetail } from "@/lib/reporting/service";
 
 describe("computeProjectProfitability", () => {
@@ -62,6 +68,27 @@ describe("computeProjectProfitability", () => {
     expect(alpha?.cost).toBe(1200);
     expect(alpha?.margin).toBe(900);
     expect(alpha?.marginPct).toBe(43);
+  });
+
+  it("does not invent revenue when time has no agreed rate", () => {
+    const report = computeProjectProfitability(
+      projects,
+      [
+        {
+          projectId: "p1",
+          userId: "unknown",
+          hours: 8,
+          billable: true,
+          billingStatus: "UNBILLED",
+          billRateOverride: null,
+        },
+      ],
+      [],
+      profiles,
+    );
+    const alpha = report.projects.find((row) => row.projectId === "p1");
+    expect(alpha?.unbilledRevenue).toBe(0);
+    expect(alpha?.revenue).toBe(0);
   });
 
   it("uses project bill rate override for revenue", () => {
@@ -288,6 +315,190 @@ describe("computeProjectProfitability", () => {
     expect(row.billedRevenue).toBe(10_000);
     expect(row.unbilledRevenue).toBe(20_000);
     expect(row.revenue).toBe(30_000);
+  });
+
+  it("keeps draft-held time, expenses, and milestones in unbilled WIP until issue", () => {
+    const heldTime = transitionSource("draft", "DRAFT", {
+      kind: "time",
+      billingStatus: "UNBILLED",
+    });
+    const heldExpense = transitionSource("draft", "DRAFT", {
+      kind: "expense",
+      billingStatus: "UNBILLED",
+    });
+    const heldMilestone = transitionSource("draft", "DRAFT", {
+      kind: "milestone",
+      status: "READY",
+    });
+    const draftInvoicedTotal = sumRealizedInvoiceSubtotals([
+      { status: "DRAFT", subtotal: 12_000 },
+    ]);
+
+    const draftReport = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Alpha",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "TIME_AND_MATERIALS",
+          contractAmount: null,
+          invoicedTotal: draftInvoicedTotal,
+          milestones: [],
+        },
+        {
+          id: "p3",
+          name: "Launch",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "MILESTONE",
+          contractAmount: 12_000,
+          invoicedTotal: draftInvoicedTotal,
+          milestones: [{ amount: 12_000, status: milestoneStatusAfter(heldMilestone) }],
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          userId: "u1",
+          hours: 10,
+          billable: true,
+          billingStatus: timeExpenseBillingStatus(heldTime),
+          billRateOverride: null,
+        },
+      ],
+      [{ projectId: "p1", amount: 100, billable: true, billingStatus: timeExpenseBillingStatus(heldExpense) }],
+      profiles,
+    );
+
+    const alpha = draftReport.projects.find((row) => row.projectId === "p1");
+    const launch = draftReport.projects.find((row) => row.projectId === "p3");
+    expect(alpha?.billedRevenue).toBe(0);
+    expect(alpha?.unbilledRevenue).toBe(2100);
+    expect(launch?.billedRevenue).toBe(0);
+    expect(launch?.unbilledRevenue).toBe(12_000);
+
+    const issuedTime = transitionSource("issue", "DRAFT", heldTime);
+    const issuedExpense = transitionSource("issue", "DRAFT", heldExpense);
+    const issuedMilestone = transitionSource("issue", "DRAFT", heldMilestone);
+    const issuedReport = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Alpha",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "TIME_AND_MATERIALS",
+          contractAmount: null,
+          invoicedTotal: sumRealizedInvoiceSubtotals([{ status: "SENT", subtotal: 2100 }]),
+          milestones: [],
+        },
+        {
+          id: "p3",
+          name: "Launch",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "MILESTONE",
+          contractAmount: 12_000,
+          invoicedTotal: sumRealizedInvoiceSubtotals([{ status: "SENT", subtotal: 12_000 }]),
+          milestones: [{ amount: 12_000, status: milestoneStatusAfter(issuedMilestone) }],
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          userId: "u1",
+          hours: 10,
+          billable: true,
+          billingStatus: timeExpenseBillingStatus(issuedTime),
+          billRateOverride: null,
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          amount: 100,
+          billable: true,
+          billingStatus: timeExpenseBillingStatus(issuedExpense),
+        },
+      ],
+      profiles,
+    );
+
+    expect(issuedReport.projects.find((row) => row.projectId === "p1")?.billedRevenue).toBe(2100);
+    expect(issuedReport.projects.find((row) => row.projectId === "p1")?.unbilledRevenue).toBe(0);
+    expect(issuedReport.projects.find((row) => row.projectId === "p3")?.billedRevenue).toBe(12_000);
+    expect(issuedReport.projects.find((row) => row.projectId === "p3")?.unbilledRevenue).toBe(0);
+
+    const restoredTime = transitionSource("void", "DRAFT", issuedTime);
+    const restoredExpense = transitionSource("void", "DRAFT", issuedExpense);
+    const restoredMilestone = transitionSource("void", "DRAFT", issuedMilestone);
+    expect(timeExpenseBillingStatus(restoredTime)).toBe("UNBILLED");
+    expect(timeExpenseBillingStatus(restoredExpense)).toBe("UNBILLED");
+    expect(milestoneStatusAfter(restoredMilestone)).toBe("READY");
+
+    const restoredReport = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Alpha",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "TIME_AND_MATERIALS",
+          contractAmount: null,
+          invoicedTotal: sumRealizedInvoiceSubtotals([]),
+          milestones: [],
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          userId: "u1",
+          hours: 10,
+          billable: true,
+          billingStatus: timeExpenseBillingStatus(restoredTime),
+          billRateOverride: null,
+        },
+      ],
+      [
+        {
+          projectId: "p1",
+          amount: 100,
+          billable: true,
+          billingStatus: timeExpenseBillingStatus(restoredExpense),
+        },
+      ],
+      profiles,
+    );
+    expect(restoredReport.projects[0].billedRevenue).toBe(0);
+    expect(restoredReport.projects[0].unbilledRevenue).toBe(2100);
+    expect(() => transitionSource("void", "SENT", heldTime)).toThrow(/draft/i);
+  });
+
+  it("leaves a fixed-fee draft out of realized contract revenue", () => {
+    const report = computeProjectProfitability(
+      [
+        {
+          id: "p1",
+          name: "Website Redesign",
+          clientName: "Acme",
+          status: "ACTIVE",
+          billingModel: "FIXED_FEE",
+          contractAmount: 48_000,
+          invoicedTotal: sumRealizedInvoiceSubtotals([
+            { status: "DRAFT", subtotal: 12_000 },
+            { status: "SENT", subtotal: 8_000 },
+          ]),
+          milestones: [],
+        },
+      ],
+      [],
+      [],
+      profiles,
+    );
+
+    expect(report.projects[0].billedRevenue).toBe(8_000);
+    expect(report.projects[0].unbilledRevenue).toBe(40_000);
   });
 });
 

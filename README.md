@@ -47,6 +47,13 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 - Docker (for local Postgres) or an existing PostgreSQL 16 instance
 - npm
 
+The one job without Postgres is realization. A draft keeps approved time as unbilled WIP (an ASC 606 contract asset). Issuing the invoice is what marks it invoiced, and voiding a draft puts it back.
+
+```bash
+npm install
+npm run realize
+```
+
 ## Quick start
 
 ```bash
@@ -113,6 +120,8 @@ See [`docs/deploy.md`](docs/deploy.md) for Railway, Fly.io, manual Node deployme
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Vitest unit tests |
+| `npm run realize` | Draft holds WIP; issue realizes it; void refuses an issued invoice |
+| `npm run tenancy` | `psa_app` sees no password hashes until an org or login email is set |
 | `npm run db:migrate` | Apply Prisma migrations |
 | `npm run db:seed` | Reset and seed demo data |
 | `npm run check:boundaries` | Module import boundary lint |

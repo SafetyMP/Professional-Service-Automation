@@ -24,7 +24,7 @@ export async function upsertResourceProfile(
 ) {
   return withOrgContext(organizationId, (tx) =>
     tx.resourceProfile.upsert({
-      where: { userId },
+      where: { organizationId_userId: { organizationId, userId } },
       create: { organizationId, userId, ...data, skills: data.skills ?? [] },
       update: data,
     }),
@@ -73,6 +73,16 @@ export type UtilizationRow = {
   overAllocated: boolean;
 };
 
+/** Utilization is approved time over capacity. Submitted time is not yet approved. */
+export function approvedHours(
+  entries: { userId: string; hours: number; status: string }[],
+  userId: string,
+): number {
+  return entries
+    .filter((entry) => entry.userId === userId && entry.status === "APPROVED")
+    .reduce((sum, entry) => sum + entry.hours, 0);
+}
+
 export async function getUtilizationReport(
   organizationId: string,
   weekDate: Date,
@@ -98,7 +108,7 @@ export async function getUtilizationReport(
       where: {
         organizationId,
         entryDate: { gte: weekStart, lte: weekEnd },
-        status: { in: ["APPROVED", "SUBMITTED"] },
+        status: "APPROVED",
       },
     });
 
@@ -113,9 +123,14 @@ export async function getUtilizationReport(
         return sum + prorated;
       }, 0);
 
-      const actualHours = timeEntries
-        .filter((t) => t.userId === profile.userId)
-        .reduce((sum, t) => sum + Number(t.hours), 0);
+      const actualHours = approvedHours(
+        timeEntries.map((entry) => ({
+          userId: entry.userId,
+          hours: Number(entry.hours),
+          status: entry.status,
+        })),
+        profile.userId,
+      );
 
       const capacityHours = Number(profile.weeklyCapacityHrs);
       const utilizationPct =

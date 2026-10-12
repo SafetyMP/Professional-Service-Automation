@@ -34,6 +34,8 @@
     "lint": "eslint src lib tests scripts --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "realize": "tsx scripts/realize-demo.ts",
+    "tenancy": "node scripts/tenancy-proof.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:generate": "prisma generate",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Decimal } from "@prisma/client/runtime/client";
 import {
+  formatInvoiceNumber,
   invoiceToCsv,
   invoiceToJournalCsv,
   resolveEntryBillRate,
@@ -32,8 +33,15 @@ describe("resolveEntryBillRate", () => {
     );
   });
 
-  it("defaults to 150 when no override or profile", () => {
-    expect(resolveEntryBillRate({ billRateOverride: null }, null)).toBe(150);
+  it("stays unpriced when no override or profile", () => {
+    expect(resolveEntryBillRate({ billRateOverride: null }, null)).toBeNull();
+  });
+});
+
+describe("formatInvoiceNumber", () => {
+  it("issues the next sequence and does not restart at the count of remaining invoices", () => {
+    expect(formatInvoiceNumber(1)).toBe("INV-00001");
+    expect(formatInvoiceNumber(4)).toBe("INV-00004");
   });
 });
 

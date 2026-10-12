@@ -25,33 +25,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
-
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
-
-        const org = await prisma.organization.findUnique({ where: { slug: orgSlug } });
-        if (!org) return null;
-
-        const membership = await prisma.organizationMember.findUnique({
-          where: {
-            organizationId_userId: {
-              organizationId: org.id,
-              userId: user.id,
+        const identity = await prisma.$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT set_config('app.login_org_slug', ${orgSlug}, true)`;
+          await tx.$executeRaw`SELECT set_config('app.login_email', ${email}, true)`;
+          const org = await tx.organization.findUnique({ where: { slug: orgSlug } });
+          if (!org) return null;
+          await tx.$executeRaw`SELECT set_config('app.current_org_id', ${org.id}, true)`;
+          const user = await tx.user.findUnique({ where: { email } });
+          if (!user) return null;
+          const valid = await bcrypt.compare(password, user.passwordHash);
+          if (!valid) return null;
+          const membership = await tx.organizationMember.findUnique({
+            where: {
+              organizationId_userId: {
+                organizationId: org.id,
+                userId: user.id,
+              },
             },
-          },
+          });
+          if (!membership) return null;
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            organizationId: org.id,
+            organizationSlug: org.slug,
+            role: membership.role,
+          };
         });
-        if (!membership) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          organizationId: org.id,
-          organizationSlug: org.slug,
-          role: membership.role,
-        };
+        if (!identity) return null;
+        return identity;
       },
     }),
   ],

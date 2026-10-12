@@ -79,6 +79,7 @@ export async function getDashboardMetrics(organizationId: string) {
           entry.project,
           profileByUser.get(entry.userId),
         );
+        if (rate == null) return sum;
         return sum + Number(entry.hours) * rate;
       }, 0),
     );

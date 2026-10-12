@@ -347,6 +347,11 @@ async function main() {
     }
   }
 
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { nextInvoiceNumber: 3 },
+  });
+
   console.log("Demo seed complete.");
   console.log("Login: admin@demo.com / password123 (org: demo-firm)");
 }

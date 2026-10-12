@@ -84,6 +84,8 @@ model Organization {
   arAccountCode         String?
   serviceRevenueAccountCode String?
   expenseRevenueAccountCode String?
+  /** Last issued invoice sequence. Voiding a draft does not return the number. */
+  nextInvoiceNumber Int @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -115,7 +117,7 @@ model User {
   memberships      OrganizationMember[]
   projectMembers   ProjectMember[]
   timeEntries      TimeEntry[]
-  resourceProfile  ResourceProfile?
+  resourceProfiles ResourceProfile[]
   allocations      Allocation[]
   expenseEntries   ExpenseEntry[]
   auditLogs        AuditLog[]
@@ -217,7 +219,7 @@ model ProjectMember {
 model ResourceProfile {
   id               String   @id @default(cuid())
   organizationId   String
-  userId           String   @unique
+  userId           String
   weeklyCapacityHrs Decimal @default(40) @db.Decimal(5, 2)
   costRate         Decimal  @default(0) @db.Decimal(10, 2)
   billRate         Decimal  @default(150) @db.Decimal(10, 2)
@@ -228,6 +230,7 @@ model ResourceProfile {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([organizationId, userId])
   @@index([organizationId])
 }
 

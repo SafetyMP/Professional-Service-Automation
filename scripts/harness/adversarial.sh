@@ -8,4 +8,5 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
-echo "adversarial: ok (stub — live HTTP probes belong on the adversarial feature branch)"
+npx vitest run tests/adversarial-deny.test.ts
+echo "adversarial: ok"

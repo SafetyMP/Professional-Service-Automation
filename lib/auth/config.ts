@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
+import { withOrgContext } from "@/lib/tenancy/with-org-context";
 import type { SessionUser } from "@/lib/auth/rbac";
 
 declare module "next-auth" {
@@ -82,12 +83,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return { ...session, user: undefined };
       }
 
-      const membership = await prisma.organizationMember.findUnique({
-        where: {
-          organizationId_userId: { organizationId, userId },
-        },
-        include: { organization: true },
-      });
+      const membership = await withOrgContext(organizationId, (tx) =>
+        tx.organizationMember.findUnique({
+          where: { organizationId_userId: { organizationId, userId } },
+          include: { organization: true },
+        }),
+      );
       if (!membership) {
         return { ...session, user: undefined };
       }

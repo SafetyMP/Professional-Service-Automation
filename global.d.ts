@@ -1,1 +1,1 @@
-declare module "*.css" {}
+/// <reference types="next" />

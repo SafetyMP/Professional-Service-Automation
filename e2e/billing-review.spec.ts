@@ -3,7 +3,13 @@ import { expect, test } from "@playwright/test";
 test("fixed-fee case reconciles the draft and compares pilot assumptions", async ({ page }) => {
   await page.goto("/case");
   const available = page.getByLabel("Available for a new draft", { exact: true });
+  await expect(available).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Invoice register" })).toBeVisible();
+  await expect(page.getByText("Client reference PO-418")).toBeVisible();
+  await page.getByRole("button", { name: "Hold for review" }).click();
   await expect(available).toHaveText("$0");
+  await expect(page.getByText("Cash received", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Restart with the open draft" }).click();
   await page.getByRole("button", { name: "Issue draft" }).click();
   await expect(available).toHaveText("$0");
   await expect(page.getByText("$24,000", { exact: true })).toHaveCount(2);
@@ -18,7 +24,7 @@ test("fixed-fee case reconciles the draft and compares pilot assumptions", async
   await expect(available).toHaveText("$6,000");
   await page.getByRole("button", { name: "Restart with the open draft" }).click();
   await expect(acceptance).toHaveValue("50");
-  await expect(available).toHaveText("$6,000");
+  await expect(available).toHaveCount(0);
   await page.getByRole("button", { name: "Void draft" }).click();
   await expect(available).toHaveText("$12,000");
   const net = page.getByLabel("First-year net capacity value");
@@ -27,9 +33,13 @@ test("fixed-fee case reconciles the draft and compares pilot assumptions", async
   await expect(net).toHaveText("-$2,400");
   await page.getByRole("link", { name: "Technical guide" }).click();
   await expect(page.getByRole("heading", { name: "Trace the billing decision" })).toBeVisible();
+  const workedAnswer = page.getByText("At 40% acceptance,", { exact: false });
+  await expect(workedAnswer).toBeHidden();
+  await page.getByText("Worked answer · opening ledger and invoice references").click();
+  await expect(workedAnswer).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in to the workspace" })).toHaveAttribute("href", "/login");
   await page.getByRole("link", { name: "Back to the billing case" }).click();
-  await expect(available).toHaveText("$0");
+  await expect(page.getByRole("heading", { name: "Invoice register" })).toBeVisible();
   await page.getByRole("link", { name: "Trace the billing decision" }).click();
   await page.getByRole("link", { name: "Sign in to the workspace" }).click();
   await expect(page).toHaveURL(/\/login$/);

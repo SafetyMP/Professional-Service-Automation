@@ -10,7 +10,7 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 
 ## Try the Friday billing review
 
-A partner wants to bill the next $6,000 on a $60,000 warehouse redesign. Finance already has a draft for that work. Change the accepted completion percentage, then keep, issue or void the draft. The case uses the same fixed-fee calculations as the application and traces each dollar to the accepted, reserved or issued balance.
+A partner wants to bill the next $6,000 on a $60,000 warehouse redesign. Review the signed client purchase order and the invoice register, choose whether to hold, issue or void the draft, and inspect the remaining billing capacity. Repeat the decision at the same accepted completion percentage, or switch to a later sign-off. The case uses the same fixed-fee calculations as the application and traces each dollar to the accepted, reserved or issued balance.
 
 With the app running locally, [open the interactive case](http://localhost:3005/case). The case runs without signing in or seeding a database. A worksheet compares a spreadsheet, an existing accounting-system register and a shadow pilot using reviewer time and first-year cost. Its figures are illustrative. The [technical guide](http://localhost:3005/case/technical) traces the calculations, links the research and explains how to run the CLI proof. [Inspect the billing rules](specs/domain/billing-rules.md).
 

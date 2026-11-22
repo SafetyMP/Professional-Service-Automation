@@ -21,15 +21,15 @@ export default function BillingReviewPage() {
             <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">What can finance bill on Friday?</h1>
             <p className="mt-4 max-w-2xl leading-relaxed text-[#f0eae0]">
               A consulting team is handing over a warehouse redesign. Under its sample agreement,
-              finance can bill up to the share of work the client has accepted. The delivery manager brings the sign-off to Friday’s close. The project accountant brings a draft. How much more can the finance partner authorize?
+              finance can bill up to the share of work the client has accepted. The project accountant has a $6,000 draft ready for Friday’s run. Check the signed order against the invoice register before authorizing it.
             </p>
           </div>
           <figure className="rounded-md border border-[#796b57] bg-[#40352a] p-4">
-            <figcaption className="mb-3 text-sm font-semibold text-[#f1ce88]">Friday’s opening file</figcaption>
+            <figcaption className="mb-3 text-sm font-semibold text-[#f1ce88]">Signed client order</figcaption>
             <div className="divide-y divide-[#d9d0c1] rounded-sm border-l-4 border-[#ae8238] bg-[#faf8f2] px-3 text-[#34291f]">
               <div className="flex justify-between gap-2 py-3 text-sm"><span>Contract <strong>WD-14</strong></span><span className="font-semibold tabular-nums">$60,000</span></div>
-              <div className="flex justify-between gap-2 py-3 text-sm"><span>Signed design</span><span className="font-semibold">40%</span></div>
-              <div className="flex justify-between gap-2 py-3 text-sm"><span>Draft <strong>D-042</strong></span><span className="font-semibold tabular-nums">$6,000</span></div>
+              <div className="flex justify-between gap-2 py-3 text-sm"><span>Purchase order</span><span className="font-semibold">PO-481</span></div>
+              <div className="flex justify-between gap-2 py-3 text-sm"><span>Billing basis</span><span className="font-semibold">Signed progress</span></div>
             </div>
           </figure>
         </header>

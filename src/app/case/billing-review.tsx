@@ -16,14 +16,14 @@ const pilotCost = 2400;
 const hourlyRate = 75;
 const priorBill = { status: "SENT", subtotal: 18000 } as const;
 const outcomes = {
-  keep: "Open draft D-042 reserves $6,000 for this engagement. The project accountant can send it for the accepted work or void it for correction.",
-  issue: "D-042 has been sent. Its $6,000 moves from reserved to issued. The client’s payment is still unverified.",
-  void: "D-042 has been voided. Its $6,000 reservation is released. Finance can prepare a replacement up to the available amount.",
+  hold: "D-042 stays open while finance confirms the purchase order with the delivery manager. Its $6,000 remains reserved.",
+  issue: "D-042 was sent with PO-418. The signed engagement names PO-481. Finance must follow up on the reference before assuming the client will accept the invoice.",
+  void: "D-042 was voided before issue. Its $6,000 reservation is released. Finance can prepare a replacement against PO-481.",
 } as const;
 
 export function BillingReview() {
   const [progress, setProgress] = useState(40);
-  const [treatment, setTreatment] = useState<keyof typeof outcomes>("keep");
+  const [treatment, setTreatment] = useState<keyof typeof outcomes | null>(null);
   const [reviews, setReviews] = useState(20);
   const [minutes, setMinutes] = useState(10);
 
@@ -65,53 +65,72 @@ export function BillingReview() {
               <option value={40}>40% · Design signed</option>
               <option value={50}>50% · Handover signed</option>
             </select>
+          </div>
+          <div className="md:col-start-2 md:row-start-1 md:row-span-2 rounded-xl border-t-2 border-[#a67a36] bg-[#f4f1e9] p-5 sm:p-6" aria-live="polite">
+            {treatment === null ? (
+              <>
+                <h3 className="text-xl font-semibold">Invoice register</h3>
+                <p className="mt-1 text-sm text-[#655b50]">Friday, before the billing run · Contract WD-14</p>
+                <dl className="mt-4 divide-y divide-[#d5c9b6] text-sm">
+                  <div className="flex justify-between gap-3 py-3"><dt>I-031 · Issued previously<br /><span className="text-[#655b50]">Client reference PO-481</span></dt><dd className="font-semibold tabular-nums">{dollars.format(priorBill.subtotal)}</dd></div>
+                  <div className="flex justify-between gap-3 py-3"><dt>D-042 · Ready for review<br /><span className="text-[#655b50]">Client reference PO-418</span></dt><dd className="font-semibold tabular-nums">{dollars.format(6000)}</dd></div>
+                </dl>
+                <p className="mt-3 border-t border-[#cec4b3] pt-3 text-sm">The signed order identifies the reference the client expects on every invoice. No payment receipts are attached to this register.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-[#655b50]">Available for a new draft</p>
+                <output aria-label="Available for a new draft" className="mt-1 block text-5xl font-semibold tracking-tight text-[#5e4116] tabular-nums">{dollars.format(available)}</output>
+                <figure className="mt-6">
+                  <figcaption className="mb-2 flex flex-wrap justify-between gap-2 text-sm font-semibold">
+                    <span>Accepted value ({progress}%)</span><span>{dollars.format(accepted)}</span>
+                  </figcaption>
+                  <div aria-hidden="true" className="flex h-6 overflow-hidden rounded-sm">
+                    {ledger.map(({ label, amount, color }) => (
+                      <div key={label} style={{ width: `${amount / accepted * 100}%`, backgroundColor: color }} />
+                    ))}
+                  </div>
+                  <dl className="mt-2 divide-y divide-[#ddd5c8] text-sm tabular-nums">
+                    {ledger.map(({ label, amount, color }) => (
+                      <div key={label} className="flex justify-between gap-4 py-2">
+                        <dt className="flex items-center gap-2"><span aria-hidden="true" className="size-3 rounded-sm" style={{ backgroundColor: color }} />{label}</dt>
+                        <dd>{dollars.format(amount)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </figure>
+                <p className="mt-4 border-t border-[#cec4b3] pt-3 text-sm text-[#534b41]">Subtract issued and reserved amounts from the accepted contract value. A new draft requires a positive balance.</p>
+                <p className="mt-3 text-sm"><strong>Cash received</strong> · Unverified. A bank receipt matched to an invoice would establish collection.</p>
+              </>
+            )}
+          </div>
+          <div className="space-y-3 md:col-start-1 md:row-start-2">
             <fieldset>
               <legend className="mb-3 font-medium">Project accountant’s decision</legend>
-              <figure className="mb-4 rounded-md border border-[#d8d2c7] px-3 py-3 text-center text-sm">
-                <figcaption className="font-semibold">D-042 · {dollars.format(6000)} draft</figcaption>
-                <div aria-hidden="true" className="mx-auto h-3 w-px bg-[#958774]" />
-                <div aria-hidden="true" className="mx-auto h-2 w-1/2 border-x border-t border-[#958774]" />
-                <div className="grid grid-cols-2 gap-2">
-                  <span className={treatment === "issue" ? "rounded bg-[#48392c] px-1 py-1 text-white" : "rounded bg-[#f4f1e9] px-1 py-1"}>Issue · bill client</span>
-                  <span className={treatment === "void" ? "rounded bg-[#48392c] px-1 py-1 text-white" : "rounded bg-[#f4f1e9] px-1 py-1"}>Void · release hold</span>
-                </div>
-              </figure>
-              {treatment === "keep" ? (
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={() => setTreatment("issue")}
-                    className="rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a480d] bg-[#70501e] px-4 py-2 font-semibold text-white">Issue draft</button>
-                  <button type="button" onClick={() => setTreatment("void")}
-                    className="rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a480d] border border-[#958774] px-4 py-2 font-semibold">Void draft</button>
-                </div>
+              {treatment === null ? (
+                <>
+                  <p className="mb-3 text-[#534b41]">Compare the client’s signed purchase order with the draft register. What should finance do with D-042?</p>
+                  <div aria-hidden="true" className="mx-auto w-2/3 border-t border-[#958774]" />
+                  <div className="grid grid-cols-3 gap-2 [&>button]:border-t-2 [&>button]:border-t-[#ac813e]">
+                    <button type="button" onClick={() => setTreatment("issue")}
+                      className="rounded-md border border-[#958774] bg-[#fcfaf5] px-2 py-2 text-sm font-semibold">Issue draft</button>
+                    <button type="button" onClick={() => setTreatment("hold")}
+                      className="rounded-md border border-[#958774] bg-[#fcfaf5] px-2 py-2 text-sm font-semibold">Hold for review</button>
+                    <button type="button" onClick={() => setTreatment("void")}
+                      className="rounded-md border border-[#958774] bg-[#fcfaf5] px-2 py-2 text-sm font-semibold">Void draft</button>
+                  </div>
+                </>
               ) : (
-                <button type="button" onClick={() => setTreatment("keep")}
-                  className="rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a480d] border border-[#958774] px-4 py-2 font-semibold">Restart with the open draft</button>
+                <button type="button" onClick={() => setTreatment(null)}
+                  className="rounded-md border border-[#958774] px-4 py-2 font-semibold">Restart with the open draft</button>
               )}
             </fieldset>
-            <p className="text-[#534b41]" aria-live="polite">{outcomes[treatment]}</p>
-          </div>
-          <div className="rounded-xl border-t-2 border-[#a67a36] bg-[#f4f1e9] p-5 sm:p-6" aria-live="polite">
-            <p className="text-sm font-semibold text-[#655b50]">Available for a new draft</p>
-            <output aria-label="Available for a new draft" className="mt-1 block text-5xl font-semibold tracking-tight text-[#5e4116] tabular-nums">{dollars.format(available)}</output>
-            <figure className="mt-6">
-              <figcaption className="mb-2 flex flex-wrap justify-between gap-2 text-sm font-semibold">
-                <span>Accepted value ({progress}%)</span><span>{dollars.format(accepted)}</span>
-              </figcaption>
-              <div aria-hidden="true" className="flex h-6 overflow-hidden rounded-sm">
-                {ledger.map(({ label, amount, color }) => (
-                  <div key={label} style={{ width: `${amount / accepted * 100}%`, backgroundColor: color }} />
-                ))}
-              </div>
-              <dl className="mt-2 divide-y divide-[#ddd5c8] text-sm tabular-nums">
-                {ledger.map(({ label, amount, color }) => (
-                  <div key={label} className="flex justify-between gap-4 py-2">
-                    <dt className="flex items-center gap-2"><span aria-hidden="true" className="size-3 rounded-sm" style={{ backgroundColor: color }} />{label}</dt>
-                    <dd>{dollars.format(amount)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </figure>
-            <p className="mt-4 border-t border-[#cec4b3] pt-3 text-sm text-[#534b41]">Subtract issued and reserved amounts from the accepted contract value. A new draft requires a positive balance.</p>
+            {treatment !== null && (
+              <figure className="border-l-4 border-[#a67a36] pl-3" aria-live="polite">
+                <figcaption className="text-sm font-semibold">D-042 · Open draft → {treatment === "issue" ? "Issued" : treatment === "hold" ? "Held for review" : "Voided"}</figcaption>
+                <p className="mt-1 text-[#534b41]">{outcomes[treatment]}</p>
+              </figure>
+            )}
           </div>
         </div>
       </section>

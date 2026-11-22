@@ -22,14 +22,18 @@ export default function TechnicalGuide() {
           <p className="mt-3">The public case runs in the browser with illustrative records. The signed-in application uses PostgreSQL, organization-scoped permissions and stored invoices.</p>
         </header>
         <section className="space-y-3">
-          <h2 className="text-2xl font-semibold">Reconcile the opening ledger</h2>
-          <p>The signed design represents 40% of a $60,000 contract, or $24,000. The issued register records $18,000. Open draft D-042 reserves the remaining $6,000, leaving $0 for a new draft.</p>
+          <h2 className="text-2xl font-semibold">Inspect the opening records</h2>
+          <p>Contract WD-14 sets the fixed fee and the client’s required invoice reference. The delivery manager supplies the signed progress record. Finance supplies the issued register and draft D-042. The accountant checks the references and selects a disposition. The kernel calculates the resulting capacity.</p>
           <p>The case calls <code>sumCommittedInvoiceSubtotals</code> for all issued and open draft amounts, and <code>sumRealizedInvoiceSubtotals</code> for issued amounts alone. <code>computeProgressBillAmount</code> subtracts commitments from the accepted contract amount and floors the result at zero.</p>
           <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#6c4b12] underline">
             <a href={repository + "/lib/billing/realization.ts"}>Invoice status functions</a>
             <a href={repository + "/lib/billing/contract-billing.ts"}>Fixed-fee calculation</a>
             <a href={repository + "/specs/domain/billing-rules.md"}>Billing rules</a>
           </p>
+          <details className="rounded-md border border-[#d8d2c7] bg-white px-4 py-3">
+            <summary className="cursor-pointer font-semibold">Worked answer · opening ledger and invoice references</summary>
+            <p className="mt-2">At 40% acceptance, $24,000 is eligible for billing. Subtract $18,000 already issued and $6,000 held on D-042. The remaining capacity for a new draft is $0. The signed order names PO-481 while the draft names PO-418. Holding for confirmation keeps its reservation. Voiding for correction releases it.</p>
+          </details>
         </section>
         <section className="space-y-3">
           <h2 className="text-2xl font-semibold">Run the realization check</h2>

@@ -1,0 +1,30 @@
+[
+  {
+    "trial": "issued",
+    "contract": "WD-14",
+    "cutoff": "2026-07-31",
+    "percent": 50,
+    "draft": "D-042",
+    "amount": 6000,
+    "contractSubtotal": 60000,
+    "priorIssued": 18000,
+    "accepted": 30000,
+    "issued": 24000,
+    "reserved": 0,
+    "available": 6000
+  },
+  {
+    "trial": "voided",
+    "contract": "WD-14",
+    "cutoff": "2026-07-31",
+    "percent": 50,
+    "draft": "D-042",
+    "amount": 6000,
+    "contractSubtotal": 60000,
+    "priorIssued": 18000,
+    "accepted": 30000,
+    "issued": 18000,
+    "reserved": 0,
+    "available": 12000
+  }
+]

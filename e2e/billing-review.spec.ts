@@ -56,6 +56,10 @@ test("fixed-fee case reconciles the draft and compares pilot assumptions", async
 });
 
 test("direct technical link restores the selected records and both halves of the study", async ({ page }) => {
+  await page.goto("/case#docket");
+  await expect(page.locator(":target").getByRole("heading", { name: "Warehouse redesign" })).toBeInViewport();
+  await page.goto("/case#prebill");
+  await expect(page.locator(":target").getByRole("button", { name: "Hold for review" })).toBeInViewport();
   await page.goto("/case/technical?progress=50&treatment=hold&reviews=12&minutes=20&choice=register&trial=voided");
   await expect(page.locator("tbody tr").last()).toHaveText("Available for a new draft$6,000$12,000");
   await page.getByRole("link", { name: "Back to the billing case" }).click();

@@ -31,7 +31,7 @@ export function BillingReview() {
 
   return (
     <>
-      <section aria-labelledby="engagement" className="rounded-b-2xl border border-[#d8d2c7] bg-white p-6 sm:p-10">
+      <section id="docket" aria-labelledby="engagement" className="rounded-b-2xl border border-[#d8d2c7] bg-white p-6 sm:p-10">
         <div className="grid gap-8 md:grid-cols-[1.1fr_1fr]">
           <div className="space-y-5">
             <div>
@@ -84,7 +84,7 @@ export function BillingReview() {
             )}
           </div>
           <div className="space-y-3 md:col-start-1 md:row-start-2">
-            <fieldset>
+            <fieldset id="prebill">
               <legend className="mb-3 font-medium">Project accountant’s decision</legend>
               {treatment === null ? (
                 <>

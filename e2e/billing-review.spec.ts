@@ -26,6 +26,13 @@ test("re-cut a pro forma, issue authorized work, then reconcile the extension", 
   await expect(balance("Issued this close")).toHaveText("$5,000");
   await expect(balance("Unbilled work remaining")).toHaveText("$1,320");
   await expect(page.getByText(/placed \$5,000 in its payment queue/)).toBeVisible();
+  await page.getByRole("link", { name: "Technical reference" }).click();
+  await expect(page.getByRole("heading", { name: "Realization kernel" })).toBeVisible();
+  await page.getByRole("link", { name: "July prebill" }).click();
+  await expect(balance("Issued this close")).toHaveText("$5,000");
+  await expect(balance("Unbilled work remaining")).toHaveText("$1,320");
+  await expect(page.getByLabel("Include work through")).toHaveValue("2026-07-24");
+  await expect(page.getByText("PB-002", { exact: true }).locator("..")).toContainText("Issued");
   await expect(page.getByRole("button", { name: "Prepare pro forma" })).toBeDisabled();
 
   await page.getByLabel("Include work through").selectOption("2026-07-31");

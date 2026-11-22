@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { authorizedThrough, cutoffs, useJulyClose, type Invoice } from "./close-state";
 import { countsAsUnbilledWip, transitionSource, type TimeExpenseSource } from "@/lib/billing/realization";
 import styles from "./case.module.css";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const rate = 165;
-const authorizedThrough = "2026-07-24";
-const cutoffs = ["2026-06-30", authorizedThrough, "2026-07-31"];
 const closeDate = Date.parse("2026-07-31");
 const ageDays = (date: string) => (closeDate - Date.parse(date)) / 86_400_000;
 const day = (date: string) => new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -21,7 +19,6 @@ const entries: Entry[] = [
 ];
 const amount = (entry: Entry) => entry.hours === undefined ? entry.expense ?? 0 : entry.hours * rate;
 const total = (items: Entry[]) => items.reduce((sum, entry) => sum + amount(entry), 0);
-type Invoice = { number: number; ids: string[]; state: "DRAFT" | "SENT" | "VOID" };
 const label = (invoice: Invoice) => `PB-${String(invoice.number).padStart(3, "0")}`;
 const onInvoice = (invoice: Invoice) => entries.filter((entry) => invoice.ids.includes(entry.id));
 
@@ -32,8 +29,7 @@ function source(entry: Entry, invoice?: Invoice) {
 }
 
 export function BillingReview() {
-  const [cutoff, setCutoff] = useState(cutoffs[2]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const { cutoff, setCutoff, invoices, setInvoices } = useJulyClose();
   const activeInvoice = (entry: Entry) => invoices.find((invoice) => invoice.state !== "VOID" && invoice.ids.includes(entry.id));
   const draft = invoices.find((invoice) => invoice.state === "DRAFT");
   const issued = entries.filter((entry) => activeInvoice(entry)?.state === "SENT");

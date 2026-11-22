@@ -84,7 +84,7 @@ export function BillingReview() {
                     className="rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a480d] border border-[#958774] px-4 py-2 font-semibold">Void draft</button>
                 </div>
               ) : (
-                <button type="button" onClick={() => { setTreatment("keep"); setProgress(40); }}
+                <button type="button" onClick={() => setTreatment("keep")}
                   className="rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6a480d] border border-[#958774] px-4 py-2 font-semibold">Restart with the open draft</button>
               )}
             </fieldset>

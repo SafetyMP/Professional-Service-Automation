@@ -8,11 +8,11 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 
 > **Permit rule:** Realization numbers come from approved time, WIP, and contracts — not from a model. Humans operate this kernel. Same instinct: [SafetyMP](https://github.com/SafetyMP/SafetyMP).
 
-## Try the Friday billing review
+## Try the July prebill
 
-A partner wants to bill the next $6,000 on a $60,000 warehouse redesign. Review the signed client purchase order and the invoice register, choose whether to hold, issue or void the draft, and inspect the remaining billing capacity. Repeat the decision at the same accepted completion percentage, or switch to a later sign-off. The case uses the same fixed-fee calculations as the application and traces each dollar to the accepted, reserved or issued balance.
+[Open the July prebill](http://localhost:3005/case) with the app running locally. As project accountant for an engineering consultancy, inspect a signed work order, an extension request and five source records. Set a service cutoff, prepare an itemized pro forma, then issue or void it. The WIP aging chart and billing register let you reconcile dollars across successive invoices.
 
-With the app running locally, [open the interactive case](http://localhost:3005/case). The case runs without signing in or seeding a database. A worksheet compares a spreadsheet, an existing accounting-system register and a shadow pilot using reviewer time and first-year cost. Its figures are illustrative. The [technical guide](http://localhost:3005/case/technical) traces the calculations, links the research and explains how to run the CLI proof. [Inspect the billing rules](specs/domain/billing-rules.md).
+The sample amounts and client response are illustrative. The desk uses the shared realization functions and runs without sign-in or a database. The [technical reference](http://localhost:3005/case/technical) maps the billing components and links to their source.
 
 ## Why not Kimai
 

@@ -80,7 +80,7 @@ export default async function LoginPage() {
                 <span className="font-mono">password123</span>
               </p>
             </form>
-            <p className="mt-4 text-center text-sm"><Link className="text-teal-800 underline" href="/case">Explore the Friday billing review</Link></p>
+            <p className="mt-4 text-center text-sm"><Link className="text-teal-800 underline" href="/case">Explore the July prebill</Link></p>
           </CardContent>
         </Card>
       </div>

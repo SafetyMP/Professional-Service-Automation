@@ -6,7 +6,7 @@ Community and Copilot agents: read AGENTS.md first. Factory overlay is docs/fact
 
 ## Docs
 
-- [README.md](README.md): quick start, why-not-Kimai, demo warning
+- [README.md](README.md): Friday billing investment case at /case, linked technical trial inspector at /case/technical, local quick start
 - [AGENTS.md](AGENTS.md): community contract and domain map
 - [docs/DESIGN-PIVOT.md](docs/DESIGN-PIVOT.md): realization-kernel positioning
 - [docs/factory-overlay.md](docs/factory-overlay.md): site/factory handoff (not the community lead)

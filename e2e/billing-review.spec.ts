@@ -1,0 +1,32 @@
+import { expect, test } from "@playwright/test";
+
+test("fixed-fee case reconciles the draft and compares pilot assumptions", async ({ page }) => {
+  await page.goto("/case");
+  const available = page.getByLabel("Available for a new draft", { exact: true });
+  await expect(available).toHaveText("$0");
+  await page.getByRole("button", { name: "Issue draft" }).click();
+  await expect(available).toHaveText("$0");
+  await expect(page.getByText("$24,000", { exact: true })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Void draft" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Restart with the open draft" }).click();
+  await page.getByRole("button", { name: "Void draft" }).click();
+  await expect(available).toHaveText("$6,000");
+  await page.getByLabel("Client acceptance record").selectOption("50");
+  await expect(available).toHaveText("$12,000");
+  await page.getByRole("button", { name: "Restart with the open draft" }).click();
+  await expect(available).toHaveText("$0");
+  await page.getByLabel("Client acceptance record").selectOption("50");
+  await expect(available).toHaveText("$6,000");
+  const net = page.getByLabel("First-year net capacity value");
+  await expect(net).toHaveText("$600");
+  await page.getByRole("slider", { name: /Minutes saved/ }).press("Home");
+  await expect(net).toHaveText("-$2,400");
+  await page.getByRole("link", { name: "Technical guide" }).click();
+  await expect(page.getByRole("heading", { name: "Trace the billing decision" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in to the workspace" })).toHaveAttribute("href", "/login");
+  await page.getByRole("link", { name: "Back to the billing case" }).click();
+  await expect(available).toHaveText("$0");
+  await page.getByRole("link", { name: "Trace the billing decision" }).click();
+  await page.getByRole("link", { name: "Sign in to the workspace" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+});

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth/config";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export default async function LoginPage() {
                 <span className="font-mono">password123</span>
               </p>
             </form>
+            <p className="mt-4 text-center text-sm"><Link className="text-teal-800 underline" href="/case">Explore the Friday billing review</Link></p>
           </CardContent>
         </Card>
       </div>

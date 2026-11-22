@@ -8,6 +8,12 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 
 > **Permit rule:** Realization numbers come from approved time, WIP, and contracts — not from a model. Humans operate this kernel. Same instinct: [SafetyMP](https://github.com/SafetyMP/SafetyMP).
 
+## Try the Friday billing review
+
+A partner wants to bill the next $6,000 on a $60,000 warehouse redesign. Finance already has a draft for that work. Change the accepted completion percentage, then keep, issue or void the draft. The case uses the same fixed-fee calculations as the application and traces each dollar to the accepted, reserved or issued balance.
+
+With the app running locally, [open the interactive case](http://localhost:3005/case). The case runs without signing in or seeding a database. A worksheet compares a spreadsheet, an existing accounting-system register and a shadow pilot using reviewer time and first-year cost. Its figures are illustrative. The [technical guide](http://localhost:3005/case/technical) traces the calculations, links the research and explains how to run the CLI proof. [Inspect the billing rules](specs/domain/billing-rules.md).
+
 ## Why not Kimai
 
 - **Kimai is a time tracker.** Hours, approvals, and timesheets are its product.
@@ -47,7 +53,7 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 - Docker (for local Postgres) or an existing PostgreSQL 16 instance
 - npm
 
-The one job without Postgres is realization. A draft keeps approved time as unbilled WIP (an ASC 606 contract asset). Issuing the invoice is what marks it invoiced, and voiding a draft puts it back.
+The realization CLI also runs without Postgres. It shows how a draft holds approved time as unbilled WIP, how issue marks it invoiced, and how voiding a draft releases the hold.
 
 ```bash
 npm install

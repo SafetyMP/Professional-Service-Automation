@@ -8,21 +8,21 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 
 > **Permit rule:** Realization numbers come from approved time, WIP, and contracts — not from a model. Humans operate this kernel. Same instinct: [SafetyMP](https://github.com/SafetyMP/SafetyMP).
 
-## Try the July prebill
+## Try the Friday billing review
 
-[Open the July prebill](http://localhost:3005/case) with the app running locally. As project accountant for an engineering consultancy, inspect a signed work order, an extension request and five source records. Set a service cutoff, prepare an itemized pro forma, then issue or void it. The WIP aging chart and billing register let you reconcile dollars across successive invoices.
+A partner wants to bill the next $6,000 on a $60,000 warehouse redesign. The delivery manager supplies a signed acceptance. The project accountant has a draft invoice and the client’s purchase order. Compare their records before deciding whether to hold, issue or void the draft.
 
-The sample amounts and client response are illustrative. The desk uses the shared realization functions and runs without sign-in or a database. The [technical reference](http://localhost:3005/case/technical) maps the billing components and links to their source.
+With the app running locally, [open the investment case](http://localhost:3005/case). Change the signed progress and estimate whether reviewer time across two monthly closes would justify a shadow pilot. Compare the pilot with keeping the spreadsheet or adding a draft register to the current accounting system. Dollar amounts, time and costs are illustrative.
+
+[Compare the July 31 issue and void trials](http://localhost:3005/case/technical?progress=50&treatment=issue&trial=voided#selected). The technical view follows the selected cutoff, invoice reference, reservation and remaining capacity. Its return link retains the case and worksheet settings. The study and trace run without sign-in or a database.
+
+[![Opening of the Friday billing review showing the signed client order and invoice register.](docs/images/friday-billing-review.png)](http://localhost:3005/case)
 
 ## Why not Kimai
 
 - **Kimai is a time tracker.** Hours, approvals, and timesheets are its product.
 - **This repo is realization.** Approved time becomes utilization, WIP dollars, a draft milestone or contract invoice, and project margin.
 - **Postgres RLS is the tenancy model.** Organization isolation is enforced in the database, not only in application middleware.
-
-<p align="center">
-  <img src="docs/images/demo.gif" alt="PSA platform demo — dashboard, invoices, and profitability views" width="900" />
-</p>
 
 ## Features
 
@@ -34,12 +34,6 @@ The sample amounts and client response are illustrative. The desk uses the share
 - **Accounting** — chart of accounts, Xero / QuickBooks OAuth, push journals from invoices
 - **Reporting** — profitability with contract/milestone columns, expense breakdown by category
 - **Row-level security** — PostgreSQL RLS enforces organization isolation
-
-## Screenshots
-
-| Dashboard | Invoices | Profitability | Accounting |
-|-----------|----------|---------------|------------|
-| ![Dashboard](docs/images/dashboard.png) | ![Invoices](docs/images/invoices.png) | ![Profitability](docs/images/profitability.png) | ![Accounting](docs/images/accounting.png) |
 
 ## Stack
 
@@ -79,7 +73,7 @@ npm run dev -- -p 3005
 # http://localhost:3005
 ```
 
-### Demo login
+### Seeded workspace accounts
 
 | Field | Value |
 |-------|-------|
@@ -132,7 +126,7 @@ See [`docs/deploy.md`](docs/deploy.md) for Railway, Fly.io, manual Node deployme
 | `npm run db:seed` | Reset and seed demo data |
 | `npm run check:boundaries` | Module import boundary lint |
 | `./scripts/verify.sh` | Full local verification gate |
-| `npm run screenshots` | Capture README screenshots and demo GIF (requires running server) |
+| `npm run screenshots` | Capture installed workspace screenshots and GIF (requires running server) |
 
 ## Project layout
 
@@ -171,7 +165,7 @@ GitHub Actions on every push and pull request:
 | [CI](.github/workflows/ci.yml) | Lint, typecheck, unit tests, boundaries, Prisma validate, production build, **E2E smoke tests** |
 | [CodeQL](.github/workflows/codeql.yml) | Security analysis (weekly + on PR) |
 | [Release](.github/workflows/release.yml) | Publish Docker image to GHCR on release |
-| [Screenshots](.github/workflows/screenshots.yml) | Regenerate README images on release |
+| [Screenshots](.github/workflows/screenshots.yml) | Capture the installed workspace on release |
 
 Dependabot opens weekly PRs for npm, GitHub Actions, and Docker base images.
 

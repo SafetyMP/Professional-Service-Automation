@@ -1,6 +1,6 @@
 # Documentation map
 
-Start at the root [README](../README.md).
+Start at the root [README](../README.md). For the public walkthrough use the [Friday billing case](../README.md#try-the-friday-billing-review). The case and its linked technical trace supersede the July prebill desk and dashboard tour.
 
 - [DESIGN-PIVOT.md](./DESIGN-PIVOT.md) — what this repository is for
 - [development.md](./development.md)

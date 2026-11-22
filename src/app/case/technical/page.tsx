@@ -1,24 +1,58 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import styles from "../case.module.css";
+import { CaseState, CaseLink } from "../case-state";
+import { readSelection, type Query } from "../selection";
+import { SelectedTrace } from "./selected-trace";
 
-export const metadata: Metadata = { title: "Component reference | Consulting realization kernel" };
-const repository = "https://github.com/SafetyMP/Professional-Service-Automation/blob/main/";
+export const metadata: Metadata = {
+  title: "Technical guide | Friday billing review",
+  description: "Trace the sample invoice to the billing kernel and reproduce the realization checks.",
+};
 
-export default function TechnicalGuide() {
+const repository = "https://github.com/SafetyMP/Professional-Service-Automation/blob/main";
+
+export default async function TechnicalGuide({ searchParams }: { searchParams: Promise<Query> }) {
+  const initial = readSelection(await searchParams);
   return (
-    <main className={styles.desk}>
-      <article className={styles.reference}>
-        <nav className={styles.nav}><Link href="/case">July prebill</Link><Link href="/login">Workspace sign-in</Link></nav>
-        <header><p className={styles.kicker}>Engineering reference</p><h1>Realization kernel</h1><p>The public desk uses in-memory fixtures and the shared invoice lifecycle. The signed-in application persists project records in PostgreSQL through Prisma.</p></header>
-        <dl>
-          <div><dt>Invoice assembly</dt><dd><a href={repository + "lib/billing/service.ts"}>Billing service</a> selects approved, billable, unlinked records by project and service dates. Project rate overrides take precedence over resource rates.</dd></div>
-          <div><dt>Source transitions</dt><dd><a href={repository + "lib/billing/realization.ts"}>Realization functions</a> keep draft sources in WIP, mark issued sources invoiced and release voided drafts.</dd></div>
-          <div><dt>Storage &amp; isolation</dt><dd><a href={repository + "prisma/schema.prisma"}>Prisma schema</a> links invoice lines to source records. Organization-scoped transactions and PostgreSQL row-level security bound workspace access.</dd></div>
-          <div><dt>Reproduce</dt><dd><code>npm run realize</code> runs the <a href={repository + "scripts/realize-demo.ts"}>database-free lifecycle proof</a>. The <a href={repository + "specs/domain/billing-rules.md"}>billing rules</a> cover all four contract methods.</dd></div>
-        </dl>
-        <footer><p>Workflow sources · <a href="https://learn.microsoft.com/en-us/dynamics365/project-operations/invoicing/post-project-invoices">Microsoft project invoicing</a> and <a href="https://help.deltek.com/product/Vantagepoint/7.2/bill_labor_tab_of_interactive_billing.html">Deltek interactive billing</a>. The client reply is a case assumption.</p></footer>
+    <CaseState initial={initial}><main className="min-h-screen bg-[#f6f5f2] px-4 py-7 text-[#302921]">
+      <article className="mx-auto max-w-3xl space-y-7">
+        <nav aria-label="Technical guide navigation" className="flex flex-wrap justify-between gap-4 text-sm">
+          <CaseLink path="/case" className="text-[#6c4b12] underline">Back to the billing case</CaseLink>
+        </nav>
+        <header className="border-t-4 border-[#ae8238] py-4">
+          <p className="mb-2 text-sm font-semibold text-[#655b50]">Technical guide · Contract WD-14</p>
+          <h1 className="text-4xl font-semibold tracking-tight">Trace the billing decision</h1>
+          <p className="mt-3">Follow WD-14 from signed progress to an invoice decision. Compare the selected ledger with recorded issue and void runs, then return to the same investment worksheet.</p>
+        </header>
+        <SelectedTrace />
+        <section className="space-y-3">
+          <h2 className="text-2xl font-semibold">Inspect the opening records</h2>
+          <p>Contract WD-14 sets the fixed fee and the client’s required invoice reference. The delivery manager supplies the signed progress record. Finance supplies the issued register and draft D-042. The accountant checks the references and selects a disposition. The kernel calculates the resulting capacity.</p>
+          <p>The case calls <code>sumCommittedInvoiceSubtotals</code> for all issued and open draft amounts, and <code>sumRealizedInvoiceSubtotals</code> for issued amounts alone. <code>computeProgressBillAmount</code> subtracts commitments from the accepted contract amount and floors the result at zero.</p>
+          <p className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#6c4b12] underline">
+            <a href={repository + "/lib/billing/realization.ts"}>Invoice status functions</a>
+            <a href={repository + "/lib/billing/contract-billing.ts"}>Fixed-fee calculation</a>
+            <a href={repository + "/specs/domain/billing-rules.md"}>Billing rules</a>
+          </p>
+          <details className="rounded-md border border-[#d8d2c7] bg-white px-4 py-3">
+            <summary className="cursor-pointer font-semibold">Worked answer · opening ledger and invoice references</summary>
+            <p className="mt-2">At 40% acceptance, $24,000 is eligible for billing. Subtract $18,000 already issued and $6,000 held on D-042. The remaining capacity for a new draft is $0. The signed order names PO-481 while the draft names PO-418. Holding for confirmation keeps its reservation. Voiding for correction releases it.</p>
+          </details>
+        </section>
+        <details className="space-y-3 border-t border-[#d8d2c7] pt-4">
+          <summary className="cursor-pointer font-semibold">Run the realization check</summary>
+          <p>From the checkout with Node 22, run the CLI to see how issue or void changes the underlying time and milestone records. The CLI and focused tests run without a database.</p>
+          <pre className="overflow-x-auto rounded-md bg-[#34291f] p-4 text-sm leading-6 text-white"><code>{`npm ci
+npm run realize
+node --import tsx scripts/record-billing-case.ts --check
+npx vitest run tests/contract-billing.test.ts`}</code></pre>
+          <p>For stored projects, invoices, utilization and margin, use the repository’s operator setup. <a className="text-[#6c4b12] underline" href={repository + "/README.md#quick-start"}>Workspace setup and demo accounts</a>.</p>
+        </details>
+        <details className="space-y-3 border-t border-[#d8d2c7] pt-4">
+          <summary className="cursor-pointer font-semibold">Research sources and limits</summary>
+          <p>Microsoft’s guidance identifies the project manager, accountant and finance leadership as distinct participants. Oracle describes delivery approval before milestone billing. Both inform the roles used in this case. <a className="text-[#6c4b12] underline" href="https://learn.microsoft.com/en-us/dynamics365/guidance/business-processes/project-to-profit-manage-project-financials-overview">Stakeholder roles</a> · <a className="text-[#6c4b12] underline" href="https://docs.oracle.com/en/cloud/saas/readiness/erp/24b/ppm24b/24B-ppm-wn-f32064.htm">Delivery approval</a>.</p>
+          <p>Billing status establishes what finance issued. Cash collection needs a receipt. Revenue recognition requires assessment of contract performance. <a className="text-[#6c4b12] underline" href="https://learn.microsoft.com/en-us/dynamics365/project-operations/invoicing/post-project-invoices">Invoicing workflow</a> · <a className="text-[#6c4b12] underline" href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-15-revenue-from-contracts-with-customers/">IFRS 15 overview</a>.</p>
+        </details>
       </article>
-    </main>
+    </main></CaseState>
   );
 }

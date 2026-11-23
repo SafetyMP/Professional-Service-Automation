@@ -1,18 +1,20 @@
-# Consulting realization kernel
+# Professional Service Automation · Consulting billing
 
 [![CI](https://github.com/SafetyMP/Professional-Service-Automation/actions/workflows/ci.yml/badge.svg)](https://github.com/SafetyMP/Professional-Service-Automation/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/SafetyMP/Professional-Service-Automation)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 
-Approved consulting time becomes utilization, WIP dollars, a draft milestone or contract invoice, and project margin. A draft invoice does not consume WIP; time and expenses stay unbilled until the invoice is issued.
+A consulting firm can finish work before it can bill for it. The delivery manager has the client’s sign-off, the project accountant knows what has already been billed, and the client’s payables clerk needs an invoice that matches the order. Professional Service Automation brings those records together so Finance can decide what to issue and explain what still needs checking.
 
-> **Permit rule:** Realization numbers come from approved time, WIP, and contracts — not from a model. Humans operate this kernel. Same instinct: [SafetyMP](https://github.com/SafetyMP/SafetyMP).
+The billing kernel calculates the available contract value from accepted progress, issued invoices and amounts reserved on open drafts. Its time-based workflow tracks approved work as unbilled until an invoice is issued. People authorize the bill and verify payment. [SafetyMP portfolio](https://github.com/SafetyMP/SafetyMP)
 
 ## Try the Friday billing review
 
 A consulting team promised a $60,000 warehouse redesign, billed as the client signs off on the work. A new sign-off has reached the delivery manager. The project accountant has $6,000 on an open draft. The client’s payables clerk needs an invoice they can match to the order.
 
-Inspect the order, the signed progress and the invoice register. Try issuing, holding or voiding the same draft on the same Friday. The case compares where the money sits and who has work to do next. The optional pilot worksheet compares two monthly closes using a spreadsheet, a draft register or the billing kernel. The records and planning assumptions are illustrative. [Try the standalone demo](https://raw.githack.com/SafetyMP/SafetyMP/30a6bb848cd29f30183e37206587366b98dbf6d7/docs/review-builds/Professional-Service-Automation/index.html) (select **Open the page** if prompted) · [Open the case in your local app](http://localhost:3005/case).
+On Friday, would you issue, hold or void that draft? Compare the signed order, the acceptance and the invoice register before choosing. Replay the other options with the same sign-off to see what remains available to bill and whether the payables clerk can route the invoice. Overlooking an open draft can bill the client twice. A missing purchase-order reference can delay payment. [Try the standalone demo](https://raw.githack.com/SafetyMP/SafetyMP/30a6bb848cd29f30183e37206587366b98dbf6d7/docs/review-builds/Professional-Service-Automation/index.html) (select **Open the page** if prompted) · [Open the case in your local app](http://localhost:3005/case).
+
+**Would it earn its place at month-end?** The finance partner can compare a spreadsheet, a draft register and the kernel running alongside billing. Across two closes, time reviews on the same engagements, include corrections and reconcile every difference in amounts billed. The worksheet uses illustrative costs. [Pilot worksheet and measures](src/app/case/pilot-worksheet.tsx)
 
 The technical guide carries the chosen date and decision from source records to billing calculations and the corresponding database operation. Open “Compare recorded runs” to check the selected ledger against the reproducible July 31 trials. The study and guide run without sign-in or a database. [Explore the standalone guide with the July 31 issue decision selected](https://raw.githack.com/SafetyMP/SafetyMP/30a6bb848cd29f30183e37206587366b98dbf6d7/docs/review-builds/Professional-Service-Automation/index.html?progress=50&treatment=issue&trial=voided#technical/selected) · [Open the same guide in your local app](http://localhost:3005/case/technical?progress=50&treatment=issue&trial=voided#selected).
 

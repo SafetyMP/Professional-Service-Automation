@@ -7,9 +7,15 @@ export const choices = {
   pilot: "Run a shadow pilot",
 } as const;
 export type Disposition = "issue" | "hold" | "void";
+export const dispositionLabels: Record<Disposition, string> = {
+  issue: "Issue draft",
+  hold: "Hold for review",
+  void: "Void draft",
+};
 export type CaseSelection = {
   progress: 40 | 50;
   treatment: Disposition | null;
+  previous: Disposition | null;
   reviews: number;
   minutes: number;
   choice: keyof typeof choices | null;
@@ -19,7 +25,7 @@ export type Query = Record<string, string | string[] | undefined>;
 export const contract = 60000;
 export const draftAmount = 6000;
 export const priorBill = { status: "SENT", subtotal: 18000 } as const;
-export const defaults: CaseSelection = { progress: 40, treatment: null, reviews: 20, minutes: 10, choice: null, trial: "issued" };
+export const defaults: CaseSelection = { progress: 40, treatment: null, previous: null, reviews: 20, minutes: 10, choice: null, trial: "issued" };
 export const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 export const signoffs = [
   { through: "2026-07-24", progress: 40, record: "Design acceptance" },
@@ -33,9 +39,12 @@ function boundedInt(value: Query[string], min: number, max: number, fallback: nu
 }
 
 export function readSelection(query: Query): CaseSelection {
+  const disposition = (value: Query[string]) => value === "issue" || value === "hold" || value === "void" ? value : null;
+  const treatment = disposition(query.treatment);
   return {
     progress: query.progress === "50" ? 50 : 40,
-    treatment: query.treatment === "issue" || query.treatment === "hold" || query.treatment === "void" ? query.treatment : null,
+    treatment,
+    previous: treatment && query.previous !== treatment ? disposition(query.previous) : null,
     reviews: boundedInt(query.reviews, 1, 80, defaults.reviews),
     minutes: boundedInt(query.minutes, 0, 40, defaults.minutes),
     choice: query.choice === "spreadsheet" || query.choice === "register" || query.choice === "pilot" ? query.choice : null,

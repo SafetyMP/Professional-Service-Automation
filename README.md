@@ -10,13 +10,13 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 
 ## Try the Friday billing review
 
-A partner wants to bill the next $6,000 on a $60,000 warehouse redesign. The delivery manager supplies a signed acceptance. The project accountant has a draft invoice and the client’s purchase order. Compare their records before deciding whether to hold, issue or void the draft.
+A consulting team promised a $60,000 warehouse redesign, billed as the client signs off on the work. A new sign-off has reached the delivery manager. The project accountant has $6,000 on an open draft. The client’s payables clerk needs an invoice they can match to the order.
 
-With the app running locally, [open the investment case](http://localhost:3005/case). Change the signed progress and estimate whether reviewer time across two monthly closes would justify a shadow pilot. Compare the pilot with keeping the spreadsheet or adding a draft register to the current accounting system. Dollar amounts, time and costs are illustrative.
+Inspect the order, the signed progress and the invoice register. Try issuing, holding or voiding the same draft on the same Friday. The case compares where the money sits and who has work to do next. The optional pilot worksheet compares two monthly closes using a spreadsheet, a draft register or the billing kernel. The records and planning assumptions are illustrative. [Open the case with the app running locally](http://localhost:3005/case).
 
-[Compare the July 31 issue and void trials](http://localhost:3005/case/technical?progress=50&treatment=issue&trial=voided#selected). The technical view follows the selected cutoff, invoice reference, reservation and remaining capacity. Its return link retains the case and worksheet settings. The study and trace run without sign-in or a database.
+The technical guide carries the chosen date and decision from source records to billing calculations and the corresponding database operation. Open “Compare recorded runs” to check the selected ledger against the reproducible July 31 trials. The study and guide run without sign-in or a database. [Explore the guide with the July 31 issue decision selected](http://localhost:3005/case/technical?progress=50&treatment=issue&trial=voided#selected).
 
-[![Opening of the Friday billing review showing the signed client order and invoice register.](docs/images/friday-billing-review.png)](http://localhost:3005/case)
+[![The Friday billing review showing how a warehouse redesign moves from client sign-off to accounts payable.](docs/images/friday-billing-review.png)](http://localhost:3005/case)
 
 ## Why not Kimai
 

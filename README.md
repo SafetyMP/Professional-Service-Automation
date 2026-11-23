@@ -12,11 +12,17 @@ Approved consulting time becomes utilization, WIP dollars, a draft milestone or 
 
 A consulting team promised a $60,000 warehouse redesign, billed as the client signs off on the work. A new sign-off has reached the delivery manager. The project accountant has $6,000 on an open draft. The client’s payables clerk needs an invoice they can match to the order.
 
-Inspect the order, the signed progress and the invoice register. Try issuing, holding or voiding the same draft on the same Friday. The case compares where the money sits and who has work to do next. The optional pilot worksheet compares two monthly closes using a spreadsheet, a draft register or the billing kernel. The records and planning assumptions are illustrative. [Open the case with the app running locally](http://localhost:3005/case).
+Inspect the order, the signed progress and the invoice register. Try issuing, holding or voiding the same draft on the same Friday. The case compares where the money sits and who has work to do next. The optional pilot worksheet compares two monthly closes using a spreadsheet, a draft register or the billing kernel. The records and planning assumptions are illustrative. [Try the standalone demo](https://raw.githack.com/SafetyMP/SafetyMP/30a6bb848cd29f30183e37206587366b98dbf6d7/docs/review-builds/Professional-Service-Automation/index.html) (select **Open the page** if prompted) · [Open the case in your local app](http://localhost:3005/case).
 
 The technical guide carries the chosen date and decision from source records to billing calculations and the corresponding database operation. Open “Compare recorded runs” to check the selected ledger against the reproducible July 31 trials. The study and guide run without sign-in or a database. [Explore the guide with the July 31 issue decision selected](http://localhost:3005/case/technical?progress=50&treatment=issue&trial=voided#selected).
 
-[![The Friday billing review showing how a warehouse redesign moves from client sign-off to accounts payable.](docs/images/friday-billing-review.png)](http://localhost:3005/case)
+[![The Friday billing review showing how a warehouse redesign moves from client sign-off to accounts payable.](docs/images/friday-billing-review.png)](https://raw.githack.com/SafetyMP/SafetyMP/30a6bb848cd29f30183e37206587366b98dbf6d7/docs/review-builds/Professional-Service-Automation/index.html)
+
+### From signed work to a billing transaction
+
+1. **Read the project file.** The case pairs dated client sign-offs with an issued invoice and an open draft. The accountant selects Friday’s records and checks the purchase order. In the connected application, an administrator enters progress. [Case records and selection](src/app/case/selection.ts) · [Progress entry](src/app/actions.ts)
+2. **Count committed value.** The kernel applies the accepted percentage to the fixed fee and deducts issued invoices and reserved drafts. Run `npx tsx scripts/record-billing-case.ts --check` after installing dependencies to verify the recorded issue and void trials against those functions. [Progress calculation](lib/billing/contract-billing.ts) · [Invoice status totals](lib/billing/realization.ts) · [Trial generator](scripts/record-billing-case.ts)
+3. **Follow the write.** The guide shows the modeled ledger for a hold, issue or void. In the signed-in application, the billing service issues or deletes an open draft inside the organization’s database transaction. Holding leaves the reservation in place. The accountant still checks the client reference, and payment requires separate evidence. [Technical guide](src/app/case/technical/selected-trace.tsx) · [Billing service](lib/billing/service.ts)
 
 ## Why not Kimai
 
